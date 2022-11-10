@@ -4,6 +4,7 @@ import json
 import logging
 
 
+# File from https://github.com/cs230-stanford/cs230-code-examples/blob/master/tensorflow/nlp/model/utils.py
 class Params():
     """Class that loads hyperparameters from a json file.
 

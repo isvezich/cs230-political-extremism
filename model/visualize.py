@@ -10,7 +10,7 @@ def metrics_to_plot(history):
 
     metrics = list(history_dict.keys())[:len(list(history_dict.keys())) // 2]
 
-    # Plot 2 columns
+    # Plot 2 columns of subplots
     x_len = math.ceil(len(metrics)/2)
     figure, axis = plt.subplots(x_len, 2, layout="constrained")
     figure.set_size_inches(9, 9)

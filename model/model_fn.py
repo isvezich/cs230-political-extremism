@@ -66,7 +66,7 @@ def model_fn(params):
         params: (Params) contains hyperparameters of the model (ex: `params.learning_rate`)
 
     Returns:
-        output: (tf.Tensor) output of the model
+        output: (keras.Sequential) Sequential model
     """
 
     # set up model architecture

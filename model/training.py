@@ -8,7 +8,7 @@ def train_and_evaluate(inputs, model, params):
 
     Args:
         inputs: (dict) contains the inputs of the graph (features, labels...)
-        model: (string) directory containing config, weights and log
+        model: (keras.Sequential) keras model with pre-defined layers
         params: (Params) contains hyperparameters of the model.
                 Must define: num_epochs, train_size, batch_size, eval_size, save_summary_steps
     """
