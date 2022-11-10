@@ -1,8 +1,3 @@
-"""Define the model."""
-import os
-import re
-import string
-
 import tensorflow as tf
 from keras import layers
 
@@ -31,17 +26,7 @@ def f1_m(y_true, y_pred):
     return 2*((precision*recall)/(precision+recall+K.epsilon()))
 
 
-def model_fn(params):
-    """Compute logits of the model (output distribution)
-
-    Args:
-        params: (Params) contains hyperparameters of the model (ex: `params.learning_rate`)
-
-    Returns:
-        output: (tf.Tensor) output of the model
-    """
-
-    # set up model architecture
+def mlp_model(params):
     model = tf.keras.Sequential([
         layers.Embedding(params.max_features + 1, params.embedding_size),
         layers.GlobalAveragePooling1D(),
@@ -56,6 +41,41 @@ def model_fn(params):
                      kernel_initializer=tf.keras.initializers.HeUniform()),
         layers.BatchNormalization(),
         layers.Dense(1)])
+    return model
+
+
+def rnn_model(params):
+    model = tf.keras.Sequential()
+    model.add(layers.Embedding(params.max_features + 1, params.embedding_size))
+
+    # The output of GRU will be a 3D tensor of shape (batch_size, timesteps, 256)
+    model.add(layers.GRU(params.h1_units, return_sequences=True))
+
+    # The output of SimpleRNN will be a 2D tensor of shape (batch_size, 128)
+    model.add(layers.SimpleRNN(params.h2_units))
+
+    model.add(layers.Dense(1))
+
+    return model
+
+
+def model_fn(params):
+    """Compute logits of the model (output distribution)
+
+    Args:
+        params: (Params) contains hyperparameters of the model (ex: `params.learning_rate`)
+
+    Returns:
+        output: (tf.Tensor) output of the model
+    """
+
+    # set up model architecture
+    if params.model_version == 'mlp':
+        model = mlp_model(params)
+    elif params.model_version == 'rnn':
+        model = rnn_model(params)
+    else:
+        raise NotImplementedError("Unknown model version: {}".format(params.model_version))
 
     # compile model
     model.compile(loss=BinaryCrossentropy(from_logits=True),
