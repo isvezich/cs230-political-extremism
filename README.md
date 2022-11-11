@@ -6,7 +6,7 @@ Create a `data/QAnon` directory and download both `Hashed_allAuthorStatus.csv` a
 
 ## Quickstart
 
-A `base_model` directory under the `experiments` directory contains a file `params.json` which sets the parameters for the experiment. It looks like
+A `base_model` directory under the `experiments` directory contains a file `params.json` which sets the parameters for the run. It looks like
 
 ```json
 {
@@ -16,10 +16,10 @@ A `base_model` directory under the `experiments` directory contains a file `para
 }
 ```
 
-To **Train** an experiment, simply run
+To **Train** a model, simply run
 
 ```
 python train.py
 ```
 
-Optionally `--data_dir` can be used to specify a different data dir.
+Optionally `--model_dir` and `--data_dir` can be used to specify a different model (besides baseline) and data dir, respectively.
