@@ -45,7 +45,7 @@ def load_data_to_df(labels_path, features_path):
 
     # concatenate title & body text into 1 string to create embedding from all the words that
     # author ever wrote--we should consider better ways to do this
-    df["words"] = (df["subreddit"] + df["domain"] + df["title"] + df["text"]).astype(str)
+    df["words"] = (df["title"] + df["text"]).astype(str)
 
     return df
 

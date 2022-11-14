@@ -1,14 +1,14 @@
 {
     "model_version": "rnn",
-    "max_features": 32768,
-    "sequence_length": 1024,
-    "h1_units": 256,
-    "h2_units": 128,
-    "l2_reg_lambda": 1e-4,
-    "embedding_size": 512,
+    "max_features": 20000,
+    "sequence_length": 600,
+    "h1_units": 64,
+    "h2_units": 32,
+    "l2_reg_lambda": 1e-2,
+    "embedding_size": 128,
 
     "learning_rate": 0.001,
     "num_epochs": 30,
     "early_stopping_patience": 10,
-    "dropout_rate": 1
+    "dropout_rate": 0.1
 }

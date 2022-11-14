@@ -49,10 +49,18 @@ def rnn_model(params):
     model.add(layers.Embedding(params.max_features + 1, params.embedding_size))
 
     # The output of GRU will be a 3D tensor of shape (batch_size, timesteps, 256)
-    model.add(layers.GRU(params.h1_units, return_sequences=True))
+    model.add(layers.GRU(
+        params.h1_units,
+        return_sequences=True,
+        dropout=params.dropout_rate,
+        recurrent_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda)
+    ))
 
     # The output of SimpleRNN will be a 2D tensor of shape (batch_size, 128)
-    model.add(layers.SimpleRNN(params.h2_units))
+    model.add(layers.SimpleRNN(
+        params.h2_units,
+        dropout=params.dropout_rate,
+        recurrent_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda)))
 
     model.add(layers.Dense(1))
 
