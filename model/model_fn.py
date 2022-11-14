@@ -1,7 +1,7 @@
 import tensorflow as tf
 from keras import layers
 from keras.layers import Embedding, Input, TextVectorization
-from tensorflow.keras.models import Model
+from keras.models import Model
 import string
 from nltk.corpus import stopwords
 import re
@@ -137,8 +137,13 @@ def rnn_model(params, maxLen=None, word_to_vec_map=None, word_to_index=None, vec
         X = layers.Embedding(
             input_dim=len(vectorize_layer.get_vocabulary()),
             output_dim=params.embedding_size)(X)
-    X = layers.GRU(params.h1_units, return_sequences=True)(X)
-    X = layers.SimpleRNN(params.h2_units)(X)
+    X = layers.GRU(params.h1_units,
+                   return_sequences=True,
+                   recurrent_dropout=params.dropout_rate,
+                   recurrent_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda))(X)
+    X = layers.SimpleRNN(params.h2_units,
+                         recurrent_dropout=params.dropout_rate,
+                         recurrent_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda))(X)
     outputs = layers.Dense(1)(X)
     model = Model(X, outputs)
 
