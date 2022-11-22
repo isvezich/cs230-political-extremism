@@ -5,7 +5,10 @@ import numpy as np
 import string
 from nltk.corpus import stopwords
 
+from model.utils import read_glove_vecs, sentence_to_avg
+
 import tensorflow as tf
+from keras.layers import TextVectorization
 
 
 def load_data_to_df(labels_path, features_path):
@@ -45,7 +48,7 @@ def load_data_to_df(labels_path, features_path):
 
     # concatenate title & body text into 1 string to create embedding from all the words that
     # author ever wrote--we should consider better ways to do this
-    df["words"] = (df["subreddit"] + df["domain"] + df["title"] + df["text"]).astype(str)
+    df["words"] = (df["title"] + df["text"]).astype(str)
 
     return df
 
@@ -64,13 +67,13 @@ def custom_standardization(input_data):
                                     '')
 
 
-def input_fn(labels_path, features_path):
+def input_fn(labels_path, features_path, embeddings_path, params):
     """Input function for NER
-
     Args:
         labels_path: (string) relative path to labels csv
         features_path: (string) relative path to features csv
-
+        embeddings_path: (string) relative path to pre-trained embeddings if they are to be used, else None
+        params: (Params) contains hyperparameters of the model (ex: `params.num_epochs`)
     """
     # Load the dataset into memory
     print("Loading QAnon dataset and creating df...")
@@ -86,41 +89,66 @@ def input_fn(labels_path, features_path):
     np.random.seed(0)
     indices = np.random.choice(a=[0, 1, 2], size=len(labels), p=[.6, .2, .2])
 
-    features_train = {
-        "words": words[indices == 0],
-        "score": score[indices == 0],
-        "num_replies": num_replies[indices == 0]
-    }
-
-    features_val = {
-        "words": words[indices == 1],
-        "score": score[indices == 1],
-        "num_replies": num_replies[indices == 1]
-    }
-
-    features_test = {
-        "words": words[indices == 2],
-        "score": score[indices == 2],
-        "num_replies": num_replies[indices == 2]
-    }
-
+    words_train = words[indices == 0]
+    score_train = score[indices == 0]
+    num_replies_train = num_replies[indices == 0]
     labels_train = labels[indices == 0]
+    words_val = words[indices == 1]
+    score_val = score[indices == 1]
+    num_replies_val = num_replies[indices == 1]
     labels_val = labels[indices == 1]
+    words_test = words[indices == 2]
+    score_test = score[indices == 2]
+    num_replies_test = num_replies[indices == 2]
     labels_test = labels[indices == 2]
 
+    if embeddings_path:
+        words_glove, word_to_vec_map = read_glove_vecs(embeddings_path)
+        str_feat_train = []
+        str_feat_val = []
+        str_feat_test = []
+        for i in range(words_train.shape[0]):
+            str_feat_train.append(sentence_to_avg(str(words_train[i]), word_to_vec_map))
+        print('finished sentence_to_avg for train')
+        for i in range(words_val.shape[0]):
+            str_feat_val.append(sentence_to_avg(str(words_val[i]), word_to_vec_map))
+        print('finished sentence_to_avg for val')
+        for i in range(words_test.shape[0]):
+            str_feat_test.append(sentence_to_avg(str(words_test[i]), word_to_vec_map))
+        print('finished sentence_to_avg for test')
+        str_feat_train = tf.cast(tf.stack(str_feat_train), 'float64')
+        str_feat_val = tf.cast(tf.stack(str_feat_val), 'float64')
+        str_feat_test = tf.cast(tf.stack(str_feat_test), 'float64')
+    else:
+        # instantiate embedding layer
+        vectorize_layer = TextVectorization(
+            standardize=custom_standardization,
+            max_tokens=params.max_features,
+            output_mode='int',
+            output_sequence_length=params.sequence_length)
+
+        vectorize_layer.adapt(words_train)
+        str_feat_train = tf.cast(vectorize_layer(words_train), 'float64')
+        str_feat_val = tf.cast(vectorize_layer(words_val), 'float64')
+        str_feat_test = tf.cast(vectorize_layer(words_test), 'float64')
+
+    features_train = tf.concat(
+        [str_feat_train,
+         tf.expand_dims(score_train, 1),
+         tf.expand_dims(num_replies_train, 1)], axis=-1)
+    features_val = tf.concat(
+        [str_feat_val,
+         tf.expand_dims(score_val, 1),
+         tf.expand_dims(num_replies_val, 1)], axis=-1)
+    features_test = tf.concat(
+        [str_feat_test,
+         tf.expand_dims(score_test, 1),
+         tf.expand_dims(num_replies_test, 1)], axis=-1)
+
     inputs = {
-        'train': {
-            'features': features_train,
-            'labels': labels_train
-        },
-        'val': {
-            'features': features_val,
-            'labels': labels_val
-        },
-        'test': {
-            'features': features_test,
-            'labels': labels_test
-        }
+        'train': (features_train, labels_train),
+        'val': (features_val, labels_val),
+        'test': (features_test, labels_test),
     }
 
     return inputs

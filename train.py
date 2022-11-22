@@ -16,6 +16,7 @@ parser.add_argument('--model_dir', default='experiments/base_model',
                     help="Directory containing params.json")
 parser.add_argument('--data_dir', default='data/QAnon', help="Directory containing the dataset")
 parser.add_argument('--embeddings_dir', default='data/embeddings', help="Directory containing pre-trained embeddings")
+parser.add_argument('--which_embeddings', default='GloVe', help="Which pre-trained embeddings to use")
 
 
 if __name__ == '__main__':
@@ -24,6 +25,7 @@ if __name__ == '__main__':
     json_path = os.path.join(args.model_dir, 'params.json')
     assert os.path.isfile(json_path), "No json configuration file found at {}".format(json_path)
     params = Params(json_path)
+    print(params.embeddings)
 
     # Set the logger
     set_logger(os.path.join(args.model_dir, 'train.log'))
@@ -39,12 +41,20 @@ if __name__ == '__main__':
 
     logging.info("Creating the datasets...")
     # Create the two iterators over the two datasets
-    inputs = input_fn(labels_dataset, features_dataset)
+    if args.which_embeddings == "GloVe":
+        embeddings = glove_dataset
+        params.embeddings = "GloVe"
+    elif not args.which_embeddings:
+        embeddings = None
+        params.embeddings = None
+    print(params.embeddings)
+
+    inputs = input_fn(labels_dataset, features_dataset, embeddings, params)
     logging.info("- done.")
 
     # Define the models (2 different set of nodes that share weights for train and eval)
     logging.info("Creating the model...")
-    train_model = model_fn(inputs, params)
+    train_model = model_fn(params)
     logging.info("- done.")
 
     # Train the model
