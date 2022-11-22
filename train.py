@@ -15,6 +15,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--model_dir', default='experiments/base_model',
                     help="Directory containing params.json")
 parser.add_argument('--data_dir', default='data/QAnon', help="Directory containing the dataset")
+parser.add_argument('--embeddings_dir', default='data/embeddings', help="Directory containing pre-trained embeddings")
 
 
 if __name__ == '__main__':
@@ -30,18 +31,20 @@ if __name__ == '__main__':
     # Check that the dataset exists
     labels_dataset = os.path.join(args.data_dir, 'Hashed_allAuthorStatus.csv')
     features_dataset = os.path.join(args.data_dir, 'Hashed_Q_Submissions_Raw_Combined.csv')
+    glove_dataset = os.path.join(args.embeddings_dir, 'glove.6B.50d.txt')
     msg = "{} file not found. Make sure you have the right dataset"
     assert os.path.isfile(labels_dataset), msg.format(labels_dataset)
     assert os.path.isfile(features_dataset), msg.format(labels_dataset)
+    assert os.path.isfile(glove_dataset), msg.format(glove_dataset)
 
     logging.info("Creating the datasets...")
     # Create the two iterators over the two datasets
-    inputs = input_fn(labels_dataset, features_dataset, params)
+    inputs = input_fn(labels_dataset, features_dataset)
     logging.info("- done.")
 
     # Define the models (2 different set of nodes that share weights for train and eval)
     logging.info("Creating the model...")
-    train_model = model_fn(params)
+    train_model = model_fn(inputs, params)
     logging.info("- done.")
 
     # Train the model

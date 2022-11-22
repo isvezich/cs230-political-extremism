@@ -4,6 +4,8 @@ from keras import layers
 from keras import backend as K
 from keras.losses import BinaryCrossentropy
 
+from model.input_fn import custom_standardization
+
 
 # define evaluation metrics
 def recall_m(y_true, y_pred):
@@ -26,21 +28,51 @@ def f1_m(y_true, y_pred):
     return 2*((precision*recall)/(precision+recall+K.epsilon()))
 
 
-def mlp_model(params):
-    model = tf.keras.Sequential([
-        layers.Embedding(params.max_features + 1, params.embedding_size),
-        layers.GlobalAveragePooling1D(),
-        layers.Dense(params.h1_units,
-                     activation='relu',
-                     kernel_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda),
-                     kernel_initializer=tf.keras.initializers.HeUniform()),
-        layers.BatchNormalization(),
-        layers.Dense(params.h2_units,
-                     activation='relu',
-                     kernel_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda),
-                     kernel_initializer=tf.keras.initializers.HeUniform()),
-        layers.BatchNormalization(),
-        layers.Dense(1)])
+def mlp_model(params, vocab):
+    inputs = {
+        "words": tf.keras.Input(shape=(), dtype="string"),
+        "score": tf.keras.Input(shape=(), dtype="float64"),
+        "num_replies": tf.keras.Input(shape=(), dtype="float64")
+    }
+
+    text_vectorizer = layers.TextVectorization(
+        standardize=custom_standardization,
+        split='whitespace',
+        output_mode='int',
+        vocabulary=vocab
+    )
+
+    vocab_size=len(vocab)
+
+    # text_vectorizer.adapt(inputs["words"])
+    # vocab_size = text_vectorizer.vocabulary_size()
+
+    # instantiate embedding layer
+    words_vector = text_vectorizer(inputs["words"])
+    words_embedding = layers.Embedding(vocab_size, params.embedding_size)(words_vector)
+    words_pooled = layers.GlobalAveragePooling1D()(words_embedding)
+    print(f"words_pooled: {words_pooled.shape}")
+
+    outputs = tf.keras.layers.Concatenate()([
+        words_pooled,
+        tf.expand_dims(inputs["score"], -1),
+        tf.expand_dims(inputs["num_replies"], -1)
+    ])
+
+    # outputs = layers.BatchNormalization()(outputs)
+    outputs = layers.Dense(params.h1_units,
+                           activation='relu',
+                           kernel_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda),
+                           kernel_initializer=tf.keras.initializers.HeUniform())(outputs)
+    # outputs = layers.BatchNormalization()(outputs)
+    outputs = layers.Dense(params.h2_units,
+                           activation='relu',
+                           kernel_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda),
+                           kernel_initializer=tf.keras.initializers.HeUniform())(outputs)
+    # outputs = layers.BatchNormalization()(outputs)
+    outputs = layers.Dense(1)(outputs)
+
+    model = tf.keras.Model(inputs, outputs)
     return model
 
 
@@ -59,19 +91,28 @@ def rnn_model(params):
     return model
 
 
-def model_fn(params):
+def model_fn(inputs, params):
     """Compute logits of the model (output distribution)
 
     Args:
         params: (Params) contains hyperparameters of the model (ex: `params.learning_rate`)
+        inputs: Features & labels
 
     Returns:
         output: (keras.Sequential) Sequential model
     """
+    text_vectorizer = layers.TextVectorization(
+        standardize=custom_standardization,
+        split='whitespace',
+        output_mode='int'
+    )
+
+    text_vectorizer.adapt(inputs["train"]["features"]["words"])
+    vocab = text_vectorizer.get_vocabulary()
 
     # set up model architecture
     if params.model_version == 'mlp':
-        model = mlp_model(params)
+        model = mlp_model(params, vocab)
     elif params.model_version == 'rnn':
         model = rnn_model(params)
     else:

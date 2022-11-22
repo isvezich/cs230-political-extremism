@@ -3,9 +3,9 @@ import re
 import pandas as pd
 import numpy as np
 import string
+from nltk.corpus import stopwords
 
 import tensorflow as tf
-from keras.layers import TextVectorization
 
 
 def load_data_to_df(labels_path, features_path):
@@ -52,7 +52,11 @@ def load_data_to_df(labels_path, features_path):
 
 # clean up junk from string
 def custom_standardization(input_data):
+    cachedStopWords = stopwords.words("english")
+
     lowercase = tf.strings.lower(input_data)
+    for word in cachedStopWords:
+        lowercase = tf.strings.regex_replace(lowercase, word, '')
     lowercase = tf.strings.regex_replace(lowercase, 'nan', '')
     stripped_html = tf.strings.regex_replace(lowercase, '<br />', ' ')
     return tf.strings.regex_replace(stripped_html,
@@ -60,13 +64,12 @@ def custom_standardization(input_data):
                                     '')
 
 
-def input_fn(labels_path, features_path, params):
+def input_fn(labels_path, features_path):
     """Input function for NER
 
     Args:
         labels_path: (string) relative path to labels csv
         features_path: (string) relative path to features csv
-        params: (Params) contains hyperparameters of the model (ex: `params.num_epochs`)
 
     """
     # Load the dataset into memory
@@ -83,45 +86,41 @@ def input_fn(labels_path, features_path, params):
     np.random.seed(0)
     indices = np.random.choice(a=[0, 1, 2], size=len(labels), p=[.6, .2, .2])
 
-    words_train = words[indices == 0]
-    score_train = score[indices == 0]
-    num_replies_train = num_replies[indices == 0]
+    features_train = {
+        "words": words[indices == 0],
+        "score": score[indices == 0],
+        "num_replies": num_replies[indices == 0]
+    }
+
+    features_val = {
+        "words": words[indices == 1],
+        "score": score[indices == 1],
+        "num_replies": num_replies[indices == 1]
+    }
+
+    features_test = {
+        "words": words[indices == 2],
+        "score": score[indices == 2],
+        "num_replies": num_replies[indices == 2]
+    }
+
     labels_train = labels[indices == 0]
-    words_val = words[indices == 1]
-    score_val = score[indices == 1]
-    num_replies_val = num_replies[indices == 1]
     labels_val = labels[indices == 1]
-    words_test = words[indices == 2]
-    score_test = score[indices == 2]
-    num_replies_test = num_replies[indices == 2]
     labels_test = labels[indices == 2]
 
-    # instantiate embedding layer
-    vectorize_layer = TextVectorization(
-        standardize=custom_standardization,
-        max_tokens=params.max_features,
-        output_mode='int',
-        output_sequence_length=params.sequence_length)
-
-    vectorize_layer.adapt(words_train)
-
-    features_train = tf.concat(
-        [tf.cast(vectorize_layer(words_train), 'float64'),
-         tf.expand_dims(score_train, 1),
-         tf.expand_dims(num_replies_train, 1)], axis=-1)
-    features_val = tf.concat(
-        [tf.cast(vectorize_layer(words_val), 'float64'),
-         tf.expand_dims(score_val, 1),
-         tf.expand_dims(num_replies_val, 1)], axis=-1)
-    features_test = tf.concat(
-        [tf.cast(vectorize_layer(words_test), 'float64'),
-         tf.expand_dims(score_test, 1),
-         tf.expand_dims(num_replies_test, 1)], axis=-1)
-
     inputs = {
-        'train': (features_train, labels_train),
-        'val': (features_val, labels_val),
-        'test': (features_test, labels_test),
+        'train': {
+            'features': features_train,
+            'labels': labels_train
+        },
+        'val': {
+            'features': features_val,
+            'labels': labels_val
+        },
+        'test': {
+            'features': features_test,
+            'labels': labels_test
+        }
     }
 
     return inputs

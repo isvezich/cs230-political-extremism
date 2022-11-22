@@ -1,7 +1,6 @@
 {
     "model_version": "rnn",
     "max_features": 32768,
-    "sequence_length": 1024,
     "h1_units": 256,
     "h2_units": 128,
     "l2_reg_lambda": 1e-4,

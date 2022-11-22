@@ -1,6 +1,9 @@
 import os
 
+from keras import layers
 from keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
+
+import tensorflow as tf
 
 
 def train_and_evaluate(inputs, model, params):
@@ -12,9 +15,6 @@ def train_and_evaluate(inputs, model, params):
         params: (Params) contains hyperparameters of the model.
                 Must define: num_epochs, train_size, batch_size, eval_size, save_summary_steps
     """
-    features_train, labels_train = inputs['train']
-    features_val, labels_val = inputs['val']
-    features_test, labels_test = inputs['test']
 
     logdir = os.path.join("logs")
     callbacks = [
@@ -24,14 +24,33 @@ def train_and_evaluate(inputs, model, params):
         TensorBoard(logdir, histogram_freq=1)
     ]
 
+    # text_vectorizer = text_vectorize(inputs['train']['features']['words'])
+    # vocab = text_vectorizer.get_vocabulary()
+    #
+    # text_vectorizer = layers.TextVectorization(
+    #     standardize=custom_standardization,
+    #     split='whitespace',
+    #     output_mode='int',
+    #     vocabulary=vocab
+    # )
+    #
+    # inputs['train']['features']['words'] = text_vectorizer(inputs['train']['features']['words']).numpy()
+    # inputs['val']['features']['words'] = text_vectorizer(inputs['val']['features']['words']).numpy()
+    # inputs['test']['features']['words'] = text_vectorizer(inputs['test']['features']['words']).numpy()
+    #
+    # print(type(inputs['test']['features']['words']))
+
+    train_dataset = tf.data.Dataset.from_tensor_slices((inputs['train']['features'], inputs['train']['labels']))
+    val_dataset = tf.data.Dataset.from_tensor_slices((inputs['val']['features'], inputs['val']['labels']))
+    test_dataset = tf.data.Dataset.from_tensor_slices((inputs['test']['features'], inputs['test']['labels']))
+
     history = model.fit(
-        features_train,
-        labels_train,
-        validation_data=(features_val, labels_val),
+        train_dataset,
+        validation_data=val_dataset,
         callbacks=callbacks,
         epochs=params.num_epochs)
 
-    loss, accuracy, f1, precision, recall, auc = model.evaluate(features_test, labels_test)
+    loss, accuracy, f1, precision, recall, auc = model.evaluate(test_dataset)
 
     print("Loss: ", loss)
     print("Accuracy: ", accuracy)

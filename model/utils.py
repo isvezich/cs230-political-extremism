@@ -2,6 +2,7 @@
 
 import json
 import logging
+import numpy as np
 
 
 # File from https://github.com/cs230-stanford/cs230-code-examples/blob/master/tensorflow/nlp/model/utils.py
@@ -76,3 +77,18 @@ def save_dict_to_json(d, json_path):
         # We need to convert the values to float for json (it doesn't accept np.array, np.float, )
         d = {k: float(v) for k, v in d.items()}
         json.dump(d, f, indent=4)
+
+
+def read_glove_vecs(glove_file):
+    with open(glove_file, 'r') as f:
+        words = set()
+        word_to_vec_map = {}
+
+        for line in f:
+            line = line.strip().split()
+            curr_word = line[0]
+            words.add(curr_word)
+            word_to_vec_map[curr_word] = np.array(line[1:], dtype=np.float64)
+
+    return words, word_to_vec_map
+
