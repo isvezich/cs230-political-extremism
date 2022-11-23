@@ -1,14 +1,8 @@
 import datetime
-import re
 import pandas as pd
 import numpy as np
-import string
-from nltk.corpus import stopwords
-
-from model.utils import read_glove_vecs, sentence_to_avg
 
 import tensorflow as tf
-from keras.layers import TextVectorization
 
 
 def load_data_to_df(labels_path, features_path):
@@ -53,27 +47,11 @@ def load_data_to_df(labels_path, features_path):
     return df
 
 
-# clean up junk from string
-def custom_standardization(input_data):
-    cachedStopWords = stopwords.words("english")
-
-    lowercase = tf.strings.lower(input_data)
-    for word in cachedStopWords:
-        lowercase = tf.strings.regex_replace(lowercase, word, '')
-    lowercase = tf.strings.regex_replace(lowercase, 'nan', '')
-    stripped_html = tf.strings.regex_replace(lowercase, '<br />', ' ')
-    return tf.strings.regex_replace(stripped_html,
-                                    '[%s]' % re.escape(string.punctuation),
-                                    '')
-
-
-def input_fn(labels_path, features_path, embeddings_path, params):
+def input_fn(labels_path, features_path):
     """Input function for NER
     Args:
         labels_path: (string) relative path to labels csv
         features_path: (string) relative path to features csv
-        embeddings_path: (string) relative path to pre-trained embeddings if they are to be used, else None
-        params: (Params) contains hyperparameters of the model (ex: `params.num_epochs`)
     """
     # Load the dataset into memory
     print("Loading QAnon dataset and creating df...")
@@ -102,53 +80,10 @@ def input_fn(labels_path, features_path, embeddings_path, params):
     num_replies_test = num_replies[indices == 2]
     labels_test = labels[indices == 2]
 
-    if embeddings_path:
-        words_glove, word_to_vec_map = read_glove_vecs(embeddings_path)
-        str_feat_train = []
-        str_feat_val = []
-        str_feat_test = []
-        for i in range(words_train.shape[0]):
-            str_feat_train.append(sentence_to_avg(str(words_train[i]), word_to_vec_map))
-        print('finished sentence_to_avg for train')
-        for i in range(words_val.shape[0]):
-            str_feat_val.append(sentence_to_avg(str(words_val[i]), word_to_vec_map))
-        print('finished sentence_to_avg for val')
-        for i in range(words_test.shape[0]):
-            str_feat_test.append(sentence_to_avg(str(words_test[i]), word_to_vec_map))
-        print('finished sentence_to_avg for test')
-        str_feat_train = tf.cast(tf.stack(str_feat_train), 'float64')
-        str_feat_val = tf.cast(tf.stack(str_feat_val), 'float64')
-        str_feat_test = tf.cast(tf.stack(str_feat_test), 'float64')
-    else:
-        # instantiate embedding layer
-        vectorize_layer = TextVectorization(
-            standardize=custom_standardization,
-            max_tokens=params.max_features,
-            output_mode='int',
-            output_sequence_length=params.sequence_length)
-
-        vectorize_layer.adapt(words_train)
-        str_feat_train = tf.cast(vectorize_layer(words_train), 'float64')
-        str_feat_val = tf.cast(vectorize_layer(words_val), 'float64')
-        str_feat_test = tf.cast(vectorize_layer(words_test), 'float64')
-
-    features_train = tf.concat(
-        [str_feat_train,
-         tf.expand_dims(score_train, 1),
-         tf.expand_dims(num_replies_train, 1)], axis=-1)
-    features_val = tf.concat(
-        [str_feat_val,
-         tf.expand_dims(score_val, 1),
-         tf.expand_dims(num_replies_val, 1)], axis=-1)
-    features_test = tf.concat(
-        [str_feat_test,
-         tf.expand_dims(score_test, 1),
-         tf.expand_dims(num_replies_test, 1)], axis=-1)
-
     inputs = {
-        'train': (features_train, labels_train),
-        'val': (features_val, labels_val),
-        'test': (features_test, labels_test),
+        'train': (words_train, score_train, num_replies_train, labels_train),
+        'val': (words_val, score_val, num_replies_val, labels_val),
+        'test': (words_test, score_test, num_replies_test, labels_test),
     }
 
     return inputs

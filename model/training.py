@@ -12,9 +12,9 @@ def train_and_evaluate(inputs, model, params):
         params: (Params) contains hyperparameters of the model.
                 Must define: num_epochs, train_size, batch_size, eval_size, save_summary_steps
     """
-    features_train, labels_train = inputs['train']
-    features_val, labels_val = inputs['val']
-    features_test, labels_test = inputs['test']
+    features_train, labels_train = inputs['train'][0], inputs['train'][3]
+    features_val, labels_val = inputs['val'][0], inputs['val'][3]
+    features_test, labels_test = inputs['test'][0], inputs['test'][3]
 
     logdir = os.path.join("logs")
     callbacks = [

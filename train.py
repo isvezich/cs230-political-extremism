@@ -25,7 +25,6 @@ if __name__ == '__main__':
     json_path = os.path.join(args.model_dir, 'params.json')
     assert os.path.isfile(json_path), "No json configuration file found at {}".format(json_path)
     params = Params(json_path)
-    print(params.embeddings)
 
     # Set the logger
     set_logger(os.path.join(args.model_dir, 'train.log'))
@@ -42,19 +41,18 @@ if __name__ == '__main__':
     logging.info("Creating the datasets...")
     # Create the two iterators over the two datasets
     if args.which_embeddings == "GloVe":
-        embeddings = glove_dataset
+        embeddings_path = glove_dataset
         params.embeddings = "GloVe"
     elif not args.which_embeddings:
-        embeddings = None
+        embeddings_path = None
         params.embeddings = None
-    print(params.embeddings)
 
-    inputs = input_fn(labels_dataset, features_dataset, embeddings, params)
+    inputs = input_fn(labels_dataset, features_dataset)
     logging.info("- done.")
 
     # Define the models (2 different set of nodes that share weights for train and eval)
     logging.info("Creating the model...")
-    train_model = model_fn(params)
+    train_model, inputs = model_fn(inputs, params, embeddings_path)
     logging.info("- done.")
 
     # Train the model
