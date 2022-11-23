@@ -94,9 +94,11 @@ def pretrained_embedding_layer(word_to_vec_map, word_to_index):
 
 def mlp_model(params, vectorize_layer=None):
     if params.embeddings:
+        print('params.embeddings: model fn mlp model - 96')
         X = Input(shape=(params.embedding_size,), dtype='float64')
     else:
-        X = Input(shape=(), dtype=str)
+        print('no params.embeddings: model fn mlp model - 99')
+        X = Input(shape=(), dtype='string')
         X = vectorize_layer(X)
         X = layers.Embedding(
             input_dim=len(vectorize_layer.get_vocabulary()),
@@ -130,7 +132,7 @@ def rnn_model(params, maxLen=None, word_to_vec_map=None, word_to_index=None, vec
         # (See additional hints in the instructions).
         X = embedding_layer(X)
     else:
-        X = Input(shape=(), dtype=str)
+        X = Input(shape=(), dtype='string')
         X = vectorize_layer(X)
         X = layers.Embedding(
             input_dim=len(vectorize_layer.get_vocabulary()),
@@ -143,7 +145,7 @@ def rnn_model(params, maxLen=None, word_to_vec_map=None, word_to_index=None, vec
     return model
 
 
-def model_fn(inputs, params, embeddings_path):
+def model_fn(inputs, params, embeddings_path=None):
     """Compute logits of the model (output distribution)
 
     Args:
@@ -157,7 +159,9 @@ def model_fn(inputs, params, embeddings_path):
 
     # set up model architecture
     if params.model_version == 'mlp':
+        print('model version is mlp: model_fn - 159')
         if embeddings_path:
+            print('embeddings path: model_fn - 161')
             params.embedding_size = 50
             words_to_index, index_to_words, word_to_vec_map = read_glove_vecs(embeddings_path)
             str_feat_train = []
@@ -177,6 +181,7 @@ def model_fn(inputs, params, embeddings_path):
             inputs['test'][0] = tf.cast(tf.stack(str_feat_test), 'float64')
             model = mlp_model(params)
         else:
+            print('no embeddings path: model fn - 181')
             # instantiate embedding layer
             vectorize_layer = TextVectorization(
                 standardize=custom_standardization,
@@ -214,5 +219,6 @@ def model_fn(inputs, params, embeddings_path):
                   optimizer=tf.keras.optimizers.Adam(learning_rate=params.learning_rate),
                   metrics=[tf.metrics.BinaryAccuracy(threshold=0.0), f1_m, precision_m, recall_m,
                            tf.metrics.AUC(from_logits=True)])
+    print(model.summary())
 
     return model, inputs

@@ -40,19 +40,26 @@ if __name__ == '__main__':
 
     logging.info("Creating the datasets...")
     # Create the two iterators over the two datasets
+    print(args.which_embeddings)
     if args.which_embeddings == "GloVe":
         embeddings_path = glove_dataset
         params.embeddings = "GloVe"
-    elif not args.which_embeddings:
-        embeddings_path = None
+    elif args.which_embeddings == "None":
         params.embeddings = None
+    else:
+        raise NotImplementedError("Unknown embeddings option: {}".format(args.which_embeddings))
 
     inputs = input_fn(labels_dataset, features_dataset)
     logging.info("- done.")
 
     # Define the models (2 different set of nodes that share weights for train and eval)
     logging.info("Creating the model...")
-    train_model, inputs = model_fn(inputs, params, embeddings_path)
+    if args.which_embeddings == 'None':
+        print('which embeddings == None (train - 58')
+        train_model, inputs = model_fn(inputs, params)
+    else:
+        train_model, inputs = model_fn(inputs, params, embeddings_path)
+
     logging.info("- done.")
 
     # Train the model

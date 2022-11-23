@@ -23,6 +23,12 @@ def train_and_evaluate(inputs, model, params):
                         save_best_only=True),
         TensorBoard(logdir, histogram_freq=1)
     ]
+    print(f"features_train shape: {features_train.shape}")
+    print(f"labels_train shape: {labels_train.shape}")
+    print(f"features_val shape: {features_val.shape}")
+    print(f"labels_val shape: {labels_val.shape}")
+    print(f"features_test shape: {features_test.shape}")
+    print(f"labels_test shape: {labels_test.shape}")
 
     history = model.fit(
         features_train,
