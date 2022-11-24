@@ -1,0 +1,11 @@
+#!/bin/bash
+[ -z "$BASH_SOURCE" ] &&
+  { echo "BASH_SOURCE is unset, exiting."; exit 1; } ||
+    BIN_DIR="$(dirname "$BASH_SOURCE")"
+cd "${BIN_DIR}/.."
+
+#SQLITE_DB=var/reddit_db.sqlite 
+#sqlite3 "$SQLITE_DB" "$@"
+
+# CHANGE THIS
+/Applications/Postgres.app/Contents/Versions/latest/bin/psql "$@"
