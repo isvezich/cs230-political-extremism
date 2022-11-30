@@ -4,12 +4,12 @@
     "sequence_length": 600,
     "h1_units": 64,
     "h2_units": 32,
-    "l2_reg_lambda": 1e-2,
+    "l2_reg_lambda": 0.04,
     "embedding_size": 128,
 
     "learning_rate": 0.001,
     "num_epochs": 30,
     "early_stopping_patience": 10,
-    "dropout_rate": 0.1,
+    "dropout_rate": 0.2,
     "embeddings": "GloVe"
 }
