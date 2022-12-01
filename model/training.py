@@ -21,7 +21,7 @@ def train_and_evaluate(inputs, model, params):
         EarlyStopping(monitor='val_loss', patience=params.early_stopping_patience),
         ModelCheckpoint(filepath='best_model.h5', monitor='val_loss',
                         save_best_only=True),
-        TensorBoard(logdir, histogram_freq=1)
+        TensorBoard(logdir, histogram_freq=0)  # https://github.com/keras-team/keras/issues/15163
     ]
     print(f"features_train shape: {features_train.shape}")
     print(f"labels_train shape: {labels_train.shape}")

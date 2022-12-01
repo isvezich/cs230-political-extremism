@@ -1,6 +1,6 @@
 import tensorflow as tf
 from keras import layers
-from keras.layers import Embedding, Input, TextVectorization
+from keras.layers import Embedding, Input, Layer, TextVectorization
 from tensorflow.keras.models import Model
 import string
 from nltk.corpus import stopwords
@@ -95,21 +95,22 @@ def pretrained_embedding_layer(word_to_vec_map, word_to_index):
 def mlp_model(params, vectorize_layer=None):
     if params.embeddings:
         print('params.embeddings: model fn mlp model - 96')
-        X = Input(shape=(params.embedding_size,), dtype='float64')
+        inputs = Input(shape=(params.embedding_size,), dtype='float64')
+        X_inp = Layer()(inputs)
     else:
         print('no params.embeddings: model fn mlp model - 99')
-        X = Input(shape=(), dtype='string')
-        X = vectorize_layer(X)
-        X = layers.Embedding(
+        inputs = Input(shape=(), dtype='string')
+        X_inp = vectorize_layer(inputs)
+        X_inp = layers.Embedding(
             input_dim=len(vectorize_layer.get_vocabulary()),
             output_dim=params.embedding_size,
             # Use masking to handle the variable sequence lengths
-            mask_zero=True)(X)
-        X = layers.GlobalAveragePooling1D()(X)
+            mask_zero=True)(X_inp)
+        X_inp = layers.GlobalAveragePooling1D()(X_inp)
     X = layers.Dense(params.h1_units,
                            activation='relu',
                            kernel_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda),
-                           kernel_initializer=tf.keras.initializers.HeUniform())(X)
+                           kernel_initializer=tf.keras.initializers.HeUniform())(X_inp)
     X = layers.BatchNormalization()(X)
     X = layers.Dense(params.h2_units,
                            activation='relu',
@@ -117,30 +118,32 @@ def mlp_model(params, vectorize_layer=None):
                            kernel_initializer=tf.keras.initializers.HeUniform())(X)
     X = layers.BatchNormalization()(X)
     outputs = layers.Dense(1)(X)
-    model = Model(X, outputs)
+    model = Model(inputs, outputs)
     return model
 
 
 def rnn_model(params, maxLen=None, word_to_vec_map=None, word_to_index=None, vectorize_layer=None):
     if params.embeddings:
-        X = Input(shape=(maxLen,), dtype='int32')
+        inputs = Input(shape=(maxLen,), dtype='int32')
 
         # Create the embedding layer pretrained with GloVe Vectors (≈1 line)
         embedding_layer = pretrained_embedding_layer(word_to_vec_map, word_to_index)
 
         # Propagate sentence_indices through your embedding layer
         # (See additional hints in the instructions).
-        X = embedding_layer(X)
+        X_inp = embedding_layer(inputs)
     else:
-        X = Input(shape=(), dtype='string')
-        X = vectorize_layer(X)
-        X = layers.Embedding(
+        inputs = Input(shape=(), dtype='string')
+        X_inp = vectorize_layer(inputs)
+        X_inp = layers.Embedding(
             input_dim=len(vectorize_layer.get_vocabulary()),
-            output_dim=params.embedding_size)(X)
-    X = layers.GRU(params.h1_units, return_sequences=True)(X)
+            output_dim=params.embedding_size,
+            # Use masking to handle the variable sequence lengths
+            mask_zero=True)(X_inp)
+    X = layers.GRU(params.h1_units, return_sequences=True)(X_inp)
     X = layers.SimpleRNN(params.h2_units)(X)
     outputs = layers.Dense(1)(X)
-    model = Model(X, outputs)
+    model = Model(inputs, outputs)
 
     return model
 
@@ -189,7 +192,7 @@ def model_fn(inputs, params, embeddings_path=None):
                 output_mode='int')
 
             vectorize_layer.adapt(inputs['train'][0])
-            model = mlp_model(params, vectorize_layer)
+            model = mlp_model(params, vectorize_layer=vectorize_layer)
     elif params.model_version == 'rnn':
         if embeddings_path:
             params.embedding_size = 50
@@ -210,7 +213,7 @@ def model_fn(inputs, params, embeddings_path=None):
                 output_mode='int')
 
             vectorize_layer.adapt(inputs['train'][0])
-            model = rnn_model(params, vectorize_layer)
+            model = rnn_model(params, vectorize_layer=vectorize_layer)
     else:
         raise NotImplementedError("Unknown model version: {}".format(params.model_version))
 

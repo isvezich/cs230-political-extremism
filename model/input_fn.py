@@ -81,9 +81,9 @@ def input_fn(labels_path, features_path):
     labels_test = labels[indices == 2]
 
     inputs = {
-        'train': (words_train, score_train, num_replies_train, labels_train),
-        'val': (words_val, score_val, num_replies_val, labels_val),
-        'test': (words_test, score_test, num_replies_test, labels_test),
+        'train': [words_train, score_train, num_replies_train, labels_train],
+        'val': [words_val, score_val, num_replies_val, labels_val],
+        'test': [words_test, score_test, num_replies_test, labels_test],
     }
 
     return inputs

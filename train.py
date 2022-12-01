@@ -55,9 +55,10 @@ if __name__ == '__main__':
     # Define the models (2 different set of nodes that share weights for train and eval)
     logging.info("Creating the model...")
     if args.which_embeddings == 'None':
-        print('which embeddings == None (train - 58')
+        print('which embeddings == None: train - 58')
         train_model, inputs = model_fn(inputs, params)
     else:
+        print('which embeddings == GloVe: train - 61')
         train_model, inputs = model_fn(inputs, params, embeddings_path)
 
     logging.info("- done.")
