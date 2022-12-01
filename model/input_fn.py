@@ -1,53 +1,46 @@
 import datetime
+import os
+import re
 import pandas as pd
 import numpy as np
 
 import tensorflow as tf
 
-
-def load_data_to_df(labels_path, features_path):
-    labels = pd.read_csv(labels_path)
-    features = pd.read_csv(features_path)
+def load_data_to_df(path):
+    df = pd.read_csv(path, compression='gzip')
 
     # convert types (originally all strings) & filter features to date range before first q drop
-    features["date_created"] = pd.to_datetime(features["date_created"])
-    features_pre = features.loc[features["date_created"] < datetime.datetime.strptime("2017-10-01", "%Y-%m-%d"), :]
-    features_pre["score"] = features_pre["score"].astype(int)
-    features_pre["numReplies"] = features_pre["numReplies"].astype(int)
-    features_pre["upvote_ratio"] = features_pre["upvote_ratio"].astype(float)
-    features_pre["is_self"] = features_pre["is_self"].astype(int)
+    df["score"] = df["score"].astype(int)
+    df["num_comments"] = df["num_comments"].astype(int)
 
-    features_pre = features_pre \
-        .groupby("author") \
+    df = df \
+        .groupby("hashed_author") \
         .agg(
         {
-            "subreddit": lambda x: list(x),
-            "id": lambda x: list(x),
             "score": "mean",
-            "numReplies": "mean",
+            "num_comments": "mean",
             "title": lambda x: list(x),
-            "text": lambda x: list(x),
-            "is_self": "mean",
-            "domain": lambda x: list(x),
-            "url": lambda x: list(x),
-            "permalink": lambda x: list(x),
-            "upvote_ratio": "mean",
-            "date_created": lambda x: list(x)
+            "selftext": lambda x: list(x),
+            "q_level": "mean",
         }
     )
 
-    features_pre.reset_index(inplace=True)
-
-    df = features_pre.merge(labels, left_on="author", right_on="QAuthor")
-
     # concatenate title & body text into 1 string to create embedding from all the words that
     # author ever wrote--we should consider better ways to do this
-    df["words"] = (df["title"] + df["text"]).astype(str)
+    df["words"] = (df["title"] + df["selftext"]).astype(str)
 
     return df
 
 
-def input_fn(labels_path, features_path):
+def load_all_data_to_df(pos_path, neg_path):
+    pos = load_data_to_df(pos_path)
+    neg = load_data_to_df(neg_path)
+    features = pd.concat([pos, neg])
+    features = features.sample(frac=1).reset_index()
+
+    return features
+
+def input_fn(pos_path, neg_path):
     """Input function for NER
     Args:
         labels_path: (string) relative path to labels csv
@@ -55,13 +48,13 @@ def input_fn(labels_path, features_path):
     """
     # Load the dataset into memory
     print("Loading QAnon dataset and creating df...")
-    df = load_data_to_df(labels_path=labels_path, features_path=features_path)
+    df = load_all_data_to_df(pos_path, neg_path)
 
     # convert to tensor to input to model
     words = tf.convert_to_tensor(df["words"])
     score = tf.convert_to_tensor(df["score"])
-    num_replies = tf.convert_to_tensor(df["numReplies"])
-    labels = tf.convert_to_tensor(df["isUQ"])
+    num_replies = tf.convert_to_tensor(df["num_comments"])
+    labels = tf.convert_to_tensor(df["q_level"])
 
     # split into train/dev/test
     np.random.seed(0)

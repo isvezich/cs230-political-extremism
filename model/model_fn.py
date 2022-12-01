@@ -1,7 +1,12 @@
 import tensorflow as tf
 from keras import layers
+<<<<<<< HEAD
 from keras.layers import Embedding, Input, Layer, TextVectorization
 from tensorflow.keras.models import Model
+=======
+from keras.layers import Embedding, Input, TextVectorization
+from keras.models import Model
+>>>>>>> 48049b57573c2dfcf60d45d226bf7afbb2380b43
 import string
 from nltk.corpus import stopwords
 import re

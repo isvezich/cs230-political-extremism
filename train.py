@@ -14,7 +14,7 @@ from model.visualize import metrics_to_plot
 parser = argparse.ArgumentParser()
 parser.add_argument('--model_dir', default='experiments/base_model',
                     help="Directory containing params.json")
-parser.add_argument('--data_dir', default='data/QAnon', help="Directory containing the dataset")
+parser.add_argument('--data_dir', default='data', help="Directory containing the dataset")
 parser.add_argument('--embeddings_dir', default='data/embeddings', help="Directory containing pre-trained embeddings")
 parser.add_argument('--which_embeddings', default='GloVe', help="Which pre-trained embeddings to use")
 
@@ -29,13 +29,12 @@ if __name__ == '__main__':
     # Set the logger
     set_logger(os.path.join(args.model_dir, 'train.log'))
 
-    # Check that the dataset exists
-    labels_dataset = os.path.join(args.data_dir, 'Hashed_allAuthorStatus.csv')
-    features_dataset = os.path.join(args.data_dir, 'Hashed_Q_Submissions_Raw_Combined.csv')
+    pos_dataset = os.path.join(args.data_dir, 'q-posts.csv.gz')
+    neg_dataset = os.path.join(args.data_dir, 'non-q-posts.csv.gz')
     glove_dataset = os.path.join(args.embeddings_dir, 'glove.6B.50d.txt')
     msg = "{} file not found. Make sure you have the right dataset"
-    assert os.path.isfile(labels_dataset), msg.format(labels_dataset)
-    assert os.path.isfile(features_dataset), msg.format(labels_dataset)
+    assert os.path.isfile(pos_dataset), msg.format(pos_dataset)
+    assert os.path.isfile(neg_dataset), msg.format(neg_dataset)
     assert os.path.isfile(glove_dataset), msg.format(glove_dataset)
 
     logging.info("Creating the datasets...")
@@ -49,7 +48,7 @@ if __name__ == '__main__':
     else:
         raise NotImplementedError("Unknown embeddings option: {}".format(args.which_embeddings))
 
-    inputs = input_fn(labels_dataset, features_dataset)
+    inputs = input_fn(pos_dataset, neg_dataset)
     logging.info("- done.")
 
     # Define the models (2 different set of nodes that share weights for train and eval)

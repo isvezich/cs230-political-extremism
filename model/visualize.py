@@ -30,4 +30,5 @@ def metrics_to_plot(history):
             y += 1
             x = 0
 
+    plt.savefig('plt.png')
     plt.show()
