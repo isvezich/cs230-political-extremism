@@ -1,0 +1,13 @@
+#!/bin/bash
+[ -z "$BASH_SOURCE" ] &&
+  { echo "BASH_SOURCE is unset, exiting."; exit 1; } ||
+    BIN_DIR="$(dirname "$BASH_SOURCE")"
+cd "${BIN_DIR}/.."
+
+SQLITE_DB=var/reddit_db.sqlite 
+IN_JSON=RS_2017-01
+
+python3 scripts/convert_data_to_csv.py < "$IN_JSON" |
+  bin/run_sql -c "COPY reddit_posts FROM stdin (FORMAT csv);"
+
+#sqlite3 "$SQLITE_DB" ".import --csv /dev/stdin reddit_posts"

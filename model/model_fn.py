@@ -140,8 +140,8 @@ def rnn_model(params, maxLen=None, word_to_vec_map=None, word_to_index=None, vec
             output_dim=params.embedding_size,
             # Use masking to handle the variable sequence lengths
             mask_zero=True)(X_inp)
-    X = layers.GRU(params.h1_units, return_sequences=True)(X_inp)
-    X = layers.SimpleRNN(params.h2_units)(X)
+    X = layers.GRU(params.h1_units, return_sequences=True, dropout=params.dropout_rate, recurrent_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda))(X_inp)
+    X = layers.SimpleRNN(params.h2_units, dropout=params.dropout_rate, recurrent_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda))(X)
     outputs = layers.Dense(1)(X)
     model = Model(inputs, outputs)
 
@@ -196,13 +196,13 @@ def model_fn(inputs, params, embeddings_path=None):
     elif params.model_version == 'rnn':
         if embeddings_path:
             params.embedding_size = 50
-            maxLen = len(max(inputs['train'][0], key=len).split())
+            maxLen = len(max(inputs['train'][0].numpy(), key=len).split())
             words_to_index, index_to_words, word_to_vec_map = read_glove_vecs(embeddings_path)
-            inputs['train'][0] = sentences_to_indices(str(inputs['train'][0]), words_to_index, maxLen)
+            inputs['train'][0] = sentences_to_indices(tf.cast(inputs['train'][0], dtype='string').numpy(), words_to_index, maxLen)
             print('finished sentences_to_indices for train')
-            inputs['val'][0] = sentences_to_indices(str(inputs['val'][0]), words_to_index, maxLen)
+            inputs['val'][0] = sentences_to_indices(tf.cast(inputs['val'][0], dtype='string').numpy(), words_to_index, maxLen)
             print('finished sentences_to_indices for val')
-            inputs['test'][0] = sentences_to_indices(str(inputs['test'][0]), words_to_index, maxLen)
+            inputs['test'][0] = sentences_to_indices(tf.cast(inputs['test'][0], dtype='string').numpy(), words_to_index, maxLen)
             print('finished sentences_to_indices for test')
             model = rnn_model(params, maxLen, word_to_vec_map, words_to_index)
         else:
