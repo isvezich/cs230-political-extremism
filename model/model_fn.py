@@ -1,16 +1,12 @@
 import tensorflow as tf
 from keras import layers
-<<<<<<< HEAD
 from keras.layers import Embedding, Input, Layer, TextVectorization
-from tensorflow.keras.models import Model
-=======
-from keras.layers import Embedding, Input, TextVectorization
 from keras.models import Model
->>>>>>> 48049b57573c2dfcf60d45d226bf7afbb2380b43
 import string
 from nltk.corpus import stopwords
 import re
 import numpy as np
+from sentence_transformers import SentenceTransformer
 
 from keras import backend as K
 from keras.losses import BinaryCrossentropy
@@ -128,7 +124,7 @@ def mlp_model(params, vectorize_layer=None):
 
 
 def rnn_model(params, maxLen=None, word_to_vec_map=None, word_to_index=None, vectorize_layer=None):
-    if params.embeddings:
+    if params.embeddings == 'GloVe':
         inputs = Input(shape=(maxLen,), dtype='int32')
 
         # Create the embedding layer pretrained with GloVe Vectors (≈1 line)
@@ -137,6 +133,9 @@ def rnn_model(params, maxLen=None, word_to_vec_map=None, word_to_index=None, vec
         # Propagate sentence_indices through your embedding layer
         # (See additional hints in the instructions).
         X_inp = embedding_layer(inputs)
+    elif params.embeddings == 'SBERT':
+        inputs = Input(shape=(maxLen, params.embedding_size), dtype='float64')
+        X_inp = Layer()(inputs)
     else:
         inputs = Input(shape=(), dtype='string')
         X_inp = vectorize_layer(inputs)
@@ -170,8 +169,8 @@ def model_fn(inputs, params, embeddings_path=None):
     # set up model architecture
     if params.model_version == 'mlp':
         print('model version is mlp: model_fn - 159')
-        if embeddings_path:
-            print('embeddings path: model_fn - 161')
+        if params.embeddings == 'GloVe':
+            print('glove embeddings: model_fn - 161')
             params.embedding_size = 50
             words_to_index, index_to_words, word_to_vec_map = read_glove_vecs(embeddings_path)
             str_feat_train = []
@@ -190,18 +189,48 @@ def model_fn(inputs, params, embeddings_path=None):
             inputs['val'][0] = tf.cast(tf.stack(str_feat_val), 'float64')
             inputs['test'][0] = tf.cast(tf.stack(str_feat_test), 'float64')
             model = mlp_model(params)
-        else:
+        elif params.embeddings == 'SBERT':
+            print('sbert embeddings: model fn - 194')
+            params.embedding_size = 384
+            model = SentenceTransformer('all-MiniLM-L6-v2')
+            str_feat_train = []
+            str_feat_val = []
+            str_feat_test = []
+            for i in range(inputs['train'][0].shape[0]):
+                sentences = str(inputs['train'][0][i]).lower().split("\', \'")
+                sentence_embeddings = model.encode(sentences)
+                sentence_embeddings = np.mean(sentence_embeddings, axis=0)
+                str_feat_train.append(sentence_embeddings)
+            print('finished sentence embeddings for train')
+            for i in range(inputs['val'][0].shape[0]):
+                sentences = str(inputs['val'][0][i]).lower().split("\', \'")
+                sentence_embeddings = model.encode(sentences)
+                sentence_embeddings = np.mean(sentence_embeddings, axis=0)
+                str_feat_val.append(sentence_embeddings)
+            print('finished sentence embeddings for val')
+            for i in range(inputs['test'][0].shape[0]):
+                sentences = str(inputs['test'][0][i]).lower().split("\', \'")
+                sentence_embeddings = model.encode(sentences)
+                sentence_embeddings = np.mean(sentence_embeddings, axis=0)
+                str_feat_test.append(sentence_embeddings)
+            print('finished sentence embeddings for test')
+            inputs['train'][0] = tf.cast(tf.stack(str_feat_train), 'float64')
+            inputs['val'][0] = tf.cast(tf.stack(str_feat_val), 'float64')
+            inputs['test'][0] = tf.cast(tf.stack(str_feat_test), 'float64')
+            model = mlp_model(params)
+        elif params.embeddings == None:
             print('no embeddings path: model fn - 181')
             # instantiate embedding layer
             vectorize_layer = TextVectorization(
                 standardize=custom_standardization,
                 max_tokens=params.max_features,
                 output_mode='int')
-
             vectorize_layer.adapt(inputs['train'][0])
             model = mlp_model(params, vectorize_layer=vectorize_layer)
+        else:
+            raise NotImplementedError("invalid embedding type")
     elif params.model_version == 'rnn':
-        if embeddings_path:
+        if params.embeddings == 'GloVe':
             params.embedding_size = 50
             maxLen = len(max(inputs['train'][0].numpy(), key=len).split())
             words_to_index, index_to_words, word_to_vec_map = read_glove_vecs(embeddings_path)
@@ -212,15 +241,45 @@ def model_fn(inputs, params, embeddings_path=None):
             inputs['test'][0] = sentences_to_indices(tf.cast(inputs['test'][0], dtype='string').numpy(), words_to_index, maxLen)
             print('finished sentences_to_indices for test')
             model = rnn_model(params, maxLen, word_to_vec_map, words_to_index)
-        else:
+        elif params.embeddings == 'SBERT':
+            print('sbert embeddings: model fn - 194')
+            params.embedding_size = 384
+            model = SentenceTransformer('all-MiniLM-L6-v2')
+            str_feat_train = []
+            str_feat_val = []
+            str_feat_test = []
+            maxLen = 0
+            for i in range(inputs['train'][0].shape[0]):
+                sentences = str(inputs['train'][0][i]).lower().split("\', \'")
+                sentence_embeddings = model.encode(sentences)
+                if sentence_embeddings.shape[0] > maxLen:
+                    maxLen = sentence_embeddings.shape[0]
+                str_feat_train.append(sentence_embeddings)
+            print('finished sentence embeddings for train')
+            for i in range(inputs['val'][0].shape[0]):
+                sentences = str(inputs['val'][0][i]).lower().split("\', \'")
+                sentence_embeddings = model.encode(sentences)
+                str_feat_val.append(sentence_embeddings)
+            print('finished sentence embeddings for val')
+            for i in range(inputs['test'][0].shape[0]):
+                sentences = str(inputs['test'][0][i]).lower().split("\', \'")
+                sentence_embeddings = model.encode(sentences)
+                str_feat_test.append(sentence_embeddings)
+            print('finished sentence embeddings for test')
+            inputs['train'][0] = tf.cast(tf.stack(str_feat_train), 'float64')
+            inputs['val'][0] = tf.cast(tf.stack(str_feat_val), 'float64')
+            inputs['test'][0] = tf.cast(tf.stack(str_feat_test), 'float64')
+            model = rnn_model(params, maxLen=maxLen)
+        elif params.embeddings == None:
             # instantiate embedding layer
             vectorize_layer = TextVectorization(
                 standardize=custom_standardization,
                 max_tokens=params.max_features,
                 output_mode='int')
-
             vectorize_layer.adapt(inputs['train'][0])
             model = rnn_model(params, vectorize_layer=vectorize_layer)
+        else:
+            raise NotImplementedError("invalid embedding type")
     else:
         raise NotImplementedError("Unknown model version: {}".format(params.model_version))
 

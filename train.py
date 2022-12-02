@@ -43,6 +43,8 @@ if __name__ == '__main__':
     if args.which_embeddings == "GloVe":
         embeddings_path = glove_dataset
         params.embeddings = "GloVe"
+    elif args.which_embeddings == "SBERT":
+        params.embeddings = "SBERT"
     elif args.which_embeddings == "None":
         params.embeddings = None
     else:
@@ -56,8 +58,11 @@ if __name__ == '__main__':
     if args.which_embeddings == 'None':
         print('which embeddings == None: train - 58')
         train_model, inputs = model_fn(inputs, params)
+    elif args.which_embeddings == 'SBERT':
+        print('which embeddings == SBERT: train - 62')
+        train_model, inputs = model_fn(inputs, params)
     else:
-        print('which embeddings == GloVe: train - 61')
+        print('which embeddings == GloVe: train - 65')
         train_model, inputs = model_fn(inputs, params, embeddings_path)
 
     logging.info("- done.")
