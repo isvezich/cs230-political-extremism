@@ -33,6 +33,7 @@ def train_and_evaluate(inputs, model, params):
     history = model.fit(
         features_train,
         labels_train,
+        batch_size=params.batch_size,
         validation_data=(features_val, labels_val),
         callbacks=callbacks,
         epochs=params.num_epochs)
