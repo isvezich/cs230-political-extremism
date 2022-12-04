@@ -28,6 +28,8 @@ def load_data_to_df(path):
     # concatenate title & body text into 1 string to create embedding from all the words that
     # author ever wrote--we should consider better ways to do this
     df["words"] = (df["title"] + df["selftext"]).astype(str)
+    print(df['q_level'].value_counts())
+    print(df.head())
 
     return df
 
@@ -51,7 +53,7 @@ def input_fn(pos_path, neg_path):
     df = load_all_data_to_df(pos_path, neg_path)
 
     # convert to tensor to input to model
-    words = tf.convert_to_tensor(df["words"])
+    words = tf.convert_to_tensor(df["words"], dtype=tf.string)
     score = tf.convert_to_tensor(df["score"])
     num_replies = tf.convert_to_tensor(df["num_comments"])
     labels = tf.convert_to_tensor(df["q_level"])

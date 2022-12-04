@@ -29,8 +29,8 @@ if __name__ == '__main__':
     # Set the logger
     set_logger(os.path.join(args.model_dir, 'train.log'))
 
-    pos_dataset = os.path.join(args.data_dir, 'q-posts.csv.gz')
-    neg_dataset = os.path.join(args.data_dir, 'non-q-posts.csv.gz')
+    pos_dataset = os.path.join(args.data_dir, 'q-posts-v2.csv.gz')
+    neg_dataset = os.path.join(args.data_dir, 'non-q-posts-v2.csv.gz')
     glove_dataset = os.path.join(args.embeddings_dir, 'glove.6B.50d.txt')
     msg = "{} file not found. Make sure you have the right dataset"
     assert os.path.isfile(pos_dataset), msg.format(pos_dataset)

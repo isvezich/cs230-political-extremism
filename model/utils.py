@@ -3,7 +3,9 @@
 import json
 import logging
 import numpy as np
+import os
 import tensorflow as tf
+from sentence_transformers import SentenceTransformer
 
 
 # File from https://github.com/cs230-stanford/cs230-code-examples/blob/master/tensorflow/nlp/model/utils.py
@@ -100,7 +102,7 @@ def read_glove_vecs(glove_file):
     return words_to_index, index_to_words, word_to_vec_map
 
 
-def sentence_to_avg(sentence, word_to_vec_map):
+def sentence_to_avg(sentence):
     """
     Converts a sentence (string) into a list of words (strings). Extracts the GloVe representation of each word
     and averages its value into a single vector encoding the meaning of the sentence.
@@ -112,11 +114,15 @@ def sentence_to_avg(sentence, word_to_vec_map):
     Returns:
     avg -- average vector encoding information about the sentence, numpy-array of shape (J,), where J can be any number
     """
+    dirname = os.path.dirname(__file__)
+    glove_file = os.path.join(dirname, '../data/embeddings/glove.6B.50d.txt')
+    words_to_index, index_to_words, word_to_vec_map = read_glove_vecs(glove_file)
+
     # Get a valid word contained in the word_to_vec_map.
     any_word = list(word_to_vec_map.keys())[0]
 
     # Step 1: Split sentence into list of lower case words (≈ 1 line)
-    words = sentence.lower().split()
+    words = sentence.numpy().decode("utf-8").lower().split(",")
 
     # Initialize the average word vector, should have the same shape as your word vectors.
     # Use `np.zeros` and pass in the argument of any word's word 2 vec's shape
@@ -137,7 +143,7 @@ def sentence_to_avg(sentence, word_to_vec_map):
         # Get the average. But only if count > 0
         avg = avg / count
 
-    return avg
+    return tf.cast(avg, dtype='float64')
 
 
 def sentences_to_indices(X, word_to_index, max_len):
@@ -163,7 +169,7 @@ def sentences_to_indices(X, word_to_index, max_len):
     for i in range(m):  # loop over training examples
 
         # Convert the ith training sentence in lower case and split is into words. You should get a list of words.
-        sentence_words = X[i].lower().split()
+        sentence_words = X[i].numpy().decode("utf-8").lower().split()
 
         # Initialize j to 0
         j = 0
@@ -181,4 +187,19 @@ def sentences_to_indices(X, word_to_index, max_len):
     ### END CODE HERE ###
 
     return X_indices
+
+
+def sentence_to_sbert_avg(inp):
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+    sentences = inp.numpy().decode("utf-8").lower().split(",")
+    sentence_embeddings = model.encode(sentences)
+    sentence_embeddings = np.mean(sentence_embeddings, axis=0)
+    return tf.convert_to_tensor(sentence_embeddings)
+
+
+def sentence_to_sbert_seq(inp):
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+    sentences = inp.numpy().decode("utf-8").lower().split(",")
+    sentence_embeddings = model.encode(sentences)
+    return sentence_embeddings
 
