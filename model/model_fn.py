@@ -5,6 +5,7 @@ from keras import layers
 from keras.layers import Embedding, Input, Layer, TextVectorization
 from keras.models import Model
 import string
+from sentence_transformers import SentenceTransformer
 
 from nltk.corpus import stopwords
 import re
@@ -226,13 +227,14 @@ def model_fn(inputs, params, embeddings_path=None):
             str_feat_train = []
             str_feat_val = []
             str_feat_test = []
+            model = SentenceTransformer('all-MiniLM-L6-v2')
             for i in range(inputs['train'][0].shape[0]):
-                str_feat_train.append(sentence_to_sbert_avg(inputs['train'][0][i]))
+                str_feat_train.append(sentence_to_sbert_avg(inputs['train'][0][i], model))
             for i in range(inputs['val'][0].shape[0]):
-                str_feat_val.append(sentence_to_sbert_avg(inputs['val'][0][i]))
+                str_feat_val.append(sentence_to_sbert_avg(inputs['val'][0][i], model))
             print('finished sentence embeddings for val')
             for i in range(inputs['test'][0].shape[0]):
-                str_feat_test.append(sentence_to_sbert_avg(inputs['test'][0][i]))
+                str_feat_test.append(sentence_to_sbert_avg(inputs['test'][0][i], model))
             print('finished sentence embeddings for test')
             inputs['train'][0] = tf.cast(tf.stack(str_feat_train), 'float64')
             inputs['val'][0] = tf.cast(tf.stack(str_feat_val), 'float64')
@@ -264,7 +266,7 @@ def model_fn(inputs, params, embeddings_path=None):
         elif params.embeddings == 'SBERT':
             print('sbert embeddings: model fn - 194')
             params.embedding_size = 384
-            # model = SentenceTransformer('all-MiniLM-L6-v2')
+            model = SentenceTransformer('all-MiniLM-L6-v2')
             # inputs['train'][0] = tf.vectorized_map(sentence_to_sbert_seq, inputs['train'][0])
             # inputs['val'][0] = tf.vectorized_map(sentence_to_sbert_seq, inputs['val'][0])
             # inputs['test'][0] = tf.vectorized_map(sentence_to_sbert_seq, inputs['test'][0])
@@ -272,13 +274,13 @@ def model_fn(inputs, params, embeddings_path=None):
             str_feat_val = []
             str_feat_test = []
             for i in range(inputs['train'][0].shape[0]):
-                str_feat_train.append(sentence_to_sbert_seq(inputs['train'][0][i]))
+                str_feat_train.append(sentence_to_sbert_seq(inputs['train'][0][i], model))
             print('finished sentence embeddings for train')
             for i in range(inputs['val'][0].shape[0]):
-                str_feat_val.append(sentence_to_sbert_seq(inputs['val'][0][i]))
+                str_feat_val.append(sentence_to_sbert_seq(inputs['val'][0][i], model))
             print('finished sentence embeddings for val')
             for i in range(inputs['test'][0].shape[0]):
-                str_feat_train.append(sentence_to_sbert_seq(inputs['test'][0][i]))
+                str_feat_train.append(sentence_to_sbert_seq(inputs['test'][0][i], model))
             print('finished sentence embeddings for test')
             inputs['train'][0] = tf.cast(tf.stack(str_feat_train), 'float64')
             inputs['val'][0] = tf.cast(tf.stack(str_feat_val), 'float64')

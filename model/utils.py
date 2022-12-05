@@ -3,9 +3,7 @@
 import json
 import logging
 import numpy as np
-import os
 import tensorflow as tf
-from sentence_transformers import SentenceTransformer
 
 
 # File from https://github.com/cs230-stanford/cs230-code-examples/blob/master/tensorflow/nlp/model/utils.py
@@ -182,16 +180,14 @@ def sentences_to_indices(X, word_to_index, max_len):
     return X_indices
 
 
-def sentence_to_sbert_avg(inp):
-    model = SentenceTransformer('all-MiniLM-L6-v2')
+def sentence_to_sbert_avg(inp, model):
     sentences = inp.numpy().decode("utf-8").lower().split(",")
     sentence_embeddings = model.encode(sentences)
     sentence_embeddings = np.mean(sentence_embeddings, axis=0)
     return tf.convert_to_tensor(sentence_embeddings)
 
 
-def sentence_to_sbert_seq(inp):
-    model = SentenceTransformer('all-MiniLM-L6-v2')
+def sentence_to_sbert_seq(inp, model):
     sentences = inp.numpy().decode("utf-8").lower().split(",")
     sentence_embeddings = model.encode(sentences)
     return sentence_embeddings
