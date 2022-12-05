@@ -14,9 +14,9 @@ select hashed_author
 from posts_good
 where q_level = 0 
 group by hashed_author
-having count(*) > 10 and count(*) < 100
+having count(*) > 20 and count(*) < 1000
 order by random()
-limit 12818
+limit 6185
 )
 order by hashed_author, created_utc
 )
