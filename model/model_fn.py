@@ -276,8 +276,9 @@ def model_fn(inputs, params, embeddings_path=None):
     # compile model
     model.compile(loss=BinaryCrossentropy(from_logits=True),
                   optimizer=tf.keras.optimizers.Adam(learning_rate=params.learning_rate),
-                  metrics=[tf.metrics.BinaryAccuracy(threshold=0.0), f1_m, precision_m, recall_m,
-                           tf.metrics.AUC(from_logits=True)])
+                  metrics=[tf.metrics.BinaryAccuracy(threshold=0.0), f1_m, precision_m, recall_m#,
+                           ])
+                           #tf.metrics.AUC(from_logits=True)])
     print(model.summary())
 
     return model, inputs

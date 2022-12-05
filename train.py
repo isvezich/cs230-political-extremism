@@ -17,13 +17,13 @@ parser.add_argument('--model_dir', default='experiments/base_model',
 parser.add_argument('--data_dir', default='data', help="Directory containing the dataset")
 parser.add_argument('--embeddings_dir', default='data/embeddings', help="Directory containing pre-trained embeddings")
 parser.add_argument('--which_embeddings', default='GloVe', help="Which pre-trained embeddings to use")
-parser.add_argument('--h1_units', default=64, help="Units in hidden layer 1")
-parser.add_argument('--h2_units', default=32, help="Units in hidden layer 2")
+parser.add_argument('--h1_units', default=256, help="Units in hidden layer 1")
+parser.add_argument('--h2_units', default=128, help="Units in hidden layer 2")
 parser.add_argument('--l2_reg_lambda', default=1e-2, help="Weight on l2 penalty")
 parser.add_argument('--learning_rate', default=0.001, help="Learning rate")
 parser.add_argument('--batch_size', default=32, help="Batch size")
-parser.add_argument('--num_epochs', default=32, help="Num epochs")
-parser.add_argument('--dropout_rate', default=0.25, help="Dropout rate")
+parser.add_argument('--num_epochs', default=2, help="Num epochs")
+parser.add_argument('--dropout_rate', default=0.1, help="Dropout rate")
 
 if __name__ == '__main__':
     # Load the parameters from the experiment params.json file in model_dir
@@ -32,19 +32,19 @@ if __name__ == '__main__':
     assert os.path.isfile(json_path), "No json configuration file found at {}".format(json_path)
     params = Params(json_path)
     if args.h1_units:
-        params.h1_units = args.h1_units
+        params.h1_units = int(args.h1_units)
     if args.h2_units:
-        params.h2_units = args.h2_units
+        params.h2_units = int(args.h2_units)
     if args.l2_reg_lambda:
-        params.l2_reg_lambda = args.l2_reg_lambda
+        params.l2_reg_lambda = float(args.l2_reg_lambda)
     if args.learning_rate:
-        params.learning_rate = args.learning_rate
+        params.learning_rate = float(args.learning_rate)
     if args.batch_size:
-        params.batch_size = args.batch_size
+        params.batch_size = int(args.batch_size)
     if args.num_epochs:
-        params.num_epochs = args.num_epochs
+        params.num_epochs = int(args.num_epochs)
     if args.dropout_rate:
-        params.dropout_rate = args.dropout_rate
+        params.dropout_rate = float(args.dropout_rate)
 
     # Set the logger
     set_logger(os.path.join(args.model_dir, 'train.log'))
@@ -90,4 +90,4 @@ if __name__ == '__main__':
     # Train the model
     logging.info("Starting training for {} epoch(s)".format(params.num_epochs))
     history = train_and_evaluate(inputs, train_model, params)
-    metrics_to_plot(history)
+    metrics_to_plot(history, params)
