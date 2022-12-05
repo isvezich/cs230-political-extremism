@@ -11,8 +11,12 @@ class SentenceBertLSTM(tf.keras.Model):
         self.params = params
 
     def build(self, inputs):
-        self.lstm_posts = tf.keras.layers.LSTM(self.params.lstm_units_post)
-        self.lstm_authors = tf.keras.layers.LSTM(self.params.lstm_units_author)
+        self.lstm_posts = tf.keras.layers.LSTM(self.params.lstm_units_post,
+                                               recurrent_regularizer=tf.keras.regularizers.L2(self.params.l2_reg_lambda),
+                                               recurrent_dropout=self.params.dropout_rate)
+        self.lstm_authors = tf.keras.layers.LSTM(self.params.lstm_units_author,
+                                                 recurrent_regularizer=tf.keras.regularizers.L2(self.params.l2_reg_lambda),
+                                                 recurrent_dropout=self.params.dropout_rate)
 
     def embed_post(self, post):
         post_model = self.model(post)

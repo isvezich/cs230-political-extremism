@@ -46,7 +46,11 @@ def convert_bert_df_to_tensor(df):
         for i, post in enumerate(e[1]):
             if i < 40:
                 del post[5:]
-                posts.append(tf.strings.lower(tf.ragged.constant(post)))
+                try:
+                    posts.append(tf.strings.lower(tf.ragged.constant(post)))
+                except ValueError:
+                    post.pop()
+                    posts.append(tf.strings.lower(tf.ragged.constant(post)))
         authors.append(tf.ragged.stack(posts, axis=0))
 
         # authors.append(tf.ragged.stack([
@@ -83,24 +87,27 @@ def input_fn_bert(bert_path):
 
     # split into train/dev/test
     np.random.seed(0)
-    indices = np.random.choice(a=[0, 1, 2, 3], size=len(df), p=[.03, .01, .01, 0.95])
+    # indices = np.random.choice(a=[0, 1, 2, 3], size=len(df), p=[.03, .01, .01, 0.95])
+    indices = np.random.choice(a=[0, 1, 2], size=len(df), p=[.6, .2, .2])
 
     print("Splitting data into train dev test")
     train_df = df[indices == 0]
     words_train = convert_bert_df_to_tensor(train_df)
     labels_train = tf.convert_to_tensor(train_df["q_level"])
-    train_ds = tf.data.Dataset.from_tensor_slices((words_train, labels_train)).batch(3)
+    train_ds = tf.data.Dataset.from_tensor_slices((words_train, labels_train))\
+        .shuffle(3, reshuffle_each_iteration=True).batch(3)
 
     val_df = df[indices == 1]
     words_val = convert_bert_df_to_tensor(val_df)
     labels_val = tf.convert_to_tensor(val_df["q_level"])
-    val_ds = tf.data.Dataset.from_tensor_slices((words_val, labels_val)).batch(3)
-
+    val_ds = tf.data.Dataset.from_tensor_slices((words_val, labels_val))\
+        .shuffle(3, reshuffle_each_iteration=True).batch(3)
 
     test_df = df[indices == 2]
     words_test = convert_bert_df_to_tensor(test_df)
     labels_test = tf.convert_to_tensor(test_df["q_level"])
-    test_ds = tf.data.Dataset.from_tensor_slices((words_test, labels_test)).batch(3)
+    test_ds = tf.data.Dataset.from_tensor_slices((words_test, labels_test))\
+        .shuffle(3, reshuffle_each_iteration=True).batch(3)
 
     print("Done data processing")
     inputs = {
