@@ -110,9 +110,11 @@ tensorboard-data-server==0.6.0
 tensorboard-plugin-wit==1.8.1
 tensorflow==2.9.2
 tensorflow-estimator==2.9.0
+tensorflow-text
 termcolor==2.1.0
 terminado==0.13.1
 testpath==0.6.0
+tf-models-official
 tornado==6.2
 traitlets==5.1.1
 typing_extensions==4.4.0

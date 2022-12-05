@@ -102,7 +102,7 @@ def read_glove_vecs(glove_file):
     return words_to_index, index_to_words, word_to_vec_map
 
 
-def sentence_to_avg(sentence):
+def sentence_to_avg(sentence, word_to_vec_map, any_word):
     """
     Converts a sentence (string) into a list of words (strings). Extracts the GloVe representation of each word
     and averages its value into a single vector encoding the meaning of the sentence.
@@ -114,13 +114,6 @@ def sentence_to_avg(sentence):
     Returns:
     avg -- average vector encoding information about the sentence, numpy-array of shape (J,), where J can be any number
     """
-    dirname = os.path.dirname(__file__)
-    glove_file = os.path.join(dirname, '../data/embeddings/glove.6B.50d.txt')
-    words_to_index, index_to_words, word_to_vec_map = read_glove_vecs(glove_file)
-
-    # Get a valid word contained in the word_to_vec_map.
-    any_word = list(word_to_vec_map.keys())[0]
-
     # Step 1: Split sentence into list of lower case words (≈ 1 line)
     words = sentence.numpy().decode("utf-8").lower().split(",")
 
