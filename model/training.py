@@ -20,7 +20,7 @@ def train_and_evaluate(inputs, model, params):
     logdir = os.path.join("logs")
     callbacks = [
         EarlyStopping(monitor='val_loss', patience=params.early_stopping_patience),
-        ModelCheckpoint(filepath=f"best_model_{params.model_version}_{params.l2_reg_lambda}_{params.learning_rate}_{params.batch_size}_{params.dropout_rate}", monitor='val_loss',
+        ModelCheckpoint(filepath=f"best_model_{params.model_version}_embeddings:{params.embeddings}_{params.l2_reg_lambda}_{params.learning_rate}_{params.batch_size}_{params.dropout_rate}", monitor='val_loss',
                         save_best_only=True),
         TensorBoard(logdir, histogram_freq=0)  # https://github.com/keras-team/keras/issues/15163
     ]
@@ -42,7 +42,7 @@ def train_and_evaluate(inputs, model, params):
     loss, accuracy, f1, precision, recall = model.evaluate(features_test, labels_test)
     
     test_history = {"loss": loss, "binary_accuracy": accuracy, "f1_m": f1, "precision_m": precision, "recall_m": recall}
-    json.dump(test_history, open(f"test_history_model:{params.model_version}_h1units:{params.h1_units}_h2units:{params.h2_units}_l2reglambda:{params.l2_reg_lambda}_lr:{params.learning_rate}_batchsize:{params.batch_size}_dropout:{params.dropout_rate}.json", 'w'))
+    json.dump(test_history, open(f"test_history_model:{params.model_version}_embeddings:{params.embeddings}_h1units:{params.h1_units}_h2units:{params.h2_units}_l2reglambda:{params.l2_reg_lambda}_lr:{params.learning_rate}_batchsize:{params.batch_size}_dropout:{params.dropout_rate}.json", 'w'))
 
     print("Loss: ", loss)
     print("Accuracy: ", accuracy)
