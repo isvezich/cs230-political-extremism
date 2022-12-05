@@ -1,10 +1,9 @@
-import datetime
-import os
-import re
 import pandas as pd
 import numpy as np
-
 import tensorflow as tf
+
+from model.model_fn import custom_standardization
+
 
 def load_data_to_df(path):
     df = pd.read_csv(path, compression='gzip')
@@ -33,6 +32,36 @@ def load_data_to_df(path):
 
     return df
 
+def load_bert_data_to_df(path):
+    df = pd.read_csv(path, compression='gzip')
+    df = df.groupby('post_id').agg({"text": lambda x: list(x), "author": "first", "q_level": "first"})
+    df = df.groupby('author').agg({"text": lambda x: list(x), "q_level": "first"})
+
+    return df
+
+def convert_bert_df_to_tensor(df):
+    authors = []
+    for e in df['text'].items():
+        posts = []
+        for i, post in enumerate(e[1]):
+            if i < 40:
+                del post[5:]
+                posts.append(tf.strings.lower(tf.ragged.constant(post)))
+        authors.append(tf.ragged.stack(posts, axis=0))
+
+        # authors.append(tf.ragged.stack([
+        #     tf.strings.lower(tf.ragged.constant(post)) for post in e[1]
+        # ], axis=0))
+
+    return tf.ragged.stack(authors, axis=0)
+
+    # return \
+    #     tf.ragged.stack([
+    #         tf.ragged.stack([
+    #             tf.strings.lower(tf.ragged.constant(post)) for post in e[1]
+    #         ], axis=0) for e in df['text'].items()
+    #     ], axis=0)
+
 
 def load_all_data_to_df(pos_path, neg_path):
     pos = load_data_to_df(pos_path)
@@ -41,6 +70,46 @@ def load_all_data_to_df(pos_path, neg_path):
     features = features.sample(frac=1).reset_index()
 
     return features
+
+
+def input_fn_bert(bert_path):
+    """Input function for NER
+    Args:
+        bert_path: (string) relative path to labels and features csv
+    """
+    # Load the dataset into memory
+    print("Loading QAnon dataset and creating df...")
+    df = load_bert_data_to_df(bert_path)
+
+    # split into train/dev/test
+    np.random.seed(0)
+    indices = np.random.choice(a=[0, 1, 2, 3], size=len(df), p=[.03, .01, .01, 0.95])
+
+    print("Splitting data into train dev test")
+    train_df = df[indices == 0]
+    words_train = convert_bert_df_to_tensor(train_df)
+    labels_train = tf.convert_to_tensor(train_df["q_level"])
+    train_ds = tf.data.Dataset.from_tensor_slices((words_train, labels_train)).batch(3)
+
+    val_df = df[indices == 1]
+    words_val = convert_bert_df_to_tensor(val_df)
+    labels_val = tf.convert_to_tensor(val_df["q_level"])
+    val_ds = tf.data.Dataset.from_tensor_slices((words_val, labels_val)).batch(3)
+
+
+    test_df = df[indices == 2]
+    words_test = convert_bert_df_to_tensor(test_df)
+    labels_test = tf.convert_to_tensor(test_df["q_level"])
+    test_ds = tf.data.Dataset.from_tensor_slices((words_test, labels_test)).batch(3)
+
+    print("Done data processing")
+    inputs = {
+        'train': (words_train, labels_train, train_ds),
+        'val': (words_val, labels_val, val_ds),
+        'test': (words_test, labels_test, test_ds),
+    }
+
+    return inputs
 
 def input_fn(pos_path, neg_path):
     """Input function for NER

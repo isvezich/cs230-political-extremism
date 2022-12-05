@@ -1,18 +1,25 @@
+import nltk
 import tensorflow as tf
+import tensorflow_text as text
 from keras import layers
 from keras.layers import Embedding, Input, Layer, TextVectorization
 from keras.models import Model
 import string
+
 from nltk.corpus import stopwords
 import re
 import numpy as np
-from sentence_transformers import SentenceTransformer
 
 from keras import backend as K
 from keras.losses import BinaryCrossentropy
 
+from model.sentence_bert_lstm import SentenceBertLSTM
 from model.utils import read_glove_vecs, sentence_to_avg, sentences_to_indices, sentence_to_sbert_avg, \
     sentence_to_sbert_seq
+from model.utils import read_glove_vecs, sentence_to_avg, sentences_to_indices
+
+import tensorflow_models as tfm
+nlp = tfm.nlp
 
 
 # define evaluation metrics
@@ -154,6 +161,20 @@ def rnn_model(params, maxLen=None, word_to_vec_map=None, word_to_index=None, vec
 
     return model
 
+def bert_to_lstm_model(params):
+    inputs = Input(shape=(None, None, None), dtype='string')
+    X = SentenceBertLSTM(params.model_id, params)(inputs)
+    # X = layers.Dense(params.h1_units,
+    #                        activation='relu',
+    #                        kernel_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda),
+    #                        kernel_initializer=tf.keras.initializers.HeUniform())(X)
+    # X = layers.BatchNormalization()(X)
+    outputs = layers.Dense(1)(X)
+    print(f"output shape: {X.shape}")
+    model = Model(inputs, outputs)
+
+    return model
+
 
 def model_fn(inputs, params, embeddings_path=None):
     """Compute logits of the model (output distribution)
@@ -270,6 +291,8 @@ def model_fn(inputs, params, embeddings_path=None):
             model = rnn_model(params, vectorize_layer=vectorize_layer)
         else:
             raise NotImplementedError("invalid embedding type")
+    elif params.model_version == 'BERT':
+        model = bert_to_lstm_model(params)
     else:
         raise NotImplementedError("Unknown model version: {}".format(params.model_version))
 

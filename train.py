@@ -7,7 +7,7 @@ import os
 from model.utils import Params
 from model.utils import set_logger
 from model.training import train_and_evaluate
-from model.input_fn import input_fn
+from model.input_fn import input_fn, input_fn_bert
 from model.model_fn import model_fn
 from model.visualize import metrics_to_plot
 
@@ -31,10 +31,12 @@ if __name__ == '__main__':
 
     pos_dataset = os.path.join(args.data_dir, 'q-posts-v2.csv.gz')
     neg_dataset = os.path.join(args.data_dir, 'non-q-posts-v2.csv.gz')
+    bert_dataset = os.path.join(args.data_dir, 'bert.csv.gz')
     glove_dataset = os.path.join(args.embeddings_dir, 'glove.6B.50d.txt')
     msg = "{} file not found. Make sure you have the right dataset"
     assert os.path.isfile(pos_dataset), msg.format(pos_dataset)
     assert os.path.isfile(neg_dataset), msg.format(neg_dataset)
+    assert os.path.isfile(bert_dataset), msg.format(bert_dataset)
     assert os.path.isfile(glove_dataset), msg.format(glove_dataset)
 
     logging.info("Creating the datasets...")
@@ -45,18 +47,24 @@ if __name__ == '__main__':
         params.embeddings = "GloVe"
     elif args.which_embeddings == "SBERT":
         params.embeddings = "SBERT"
+    elif args.which_embeddings == 'BERT':
+        params.embeddings = 'BERT'
     elif args.which_embeddings == "None":
         params.embeddings = None
     else:
         raise NotImplementedError("Unknown embeddings option: {}".format(args.which_embeddings))
 
-    inputs = input_fn(pos_dataset, neg_dataset)
+    if params.embeddings == 'BERT':
+        logging.info('Making bert dataset')
+        inputs = input_fn_bert(bert_dataset)
+    else:
+        inputs = input_fn(pos_dataset, neg_dataset)
     logging.info("- done.")
 
     # Define the models (2 different set of nodes that share weights for train and eval)
     logging.info("Creating the model...")
-    if args.which_embeddings == 'None':
-        print('which embeddings == None: train - 58')
+    if args.which_embeddings == 'None' or args.which_embeddings == 'BERT':
+        print('which embeddings == None or BERT: train - 58')
         train_model, inputs = model_fn(inputs, params)
     elif args.which_embeddings == 'SBERT':
         print('which embeddings == SBERT: train - 62')
