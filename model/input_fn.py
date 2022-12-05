@@ -44,7 +44,7 @@ def convert_bert_df_to_tensor(df):
     for e in df['text'].items():
         posts = []
         for i, post in enumerate(e[1]):
-            if i < 40:
+            if i < 100:
                 del post[5:]
                 try:
                     posts.append(tf.strings.lower(tf.ragged.constant(post)))
