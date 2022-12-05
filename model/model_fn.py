@@ -154,7 +154,7 @@ def rnn_model(params, maxLen=None, word_to_vec_map=None, word_to_index=None, vec
             # Use masking to handle the variable sequence lengths
             mask_zero=True)(X_inp)
     # The output of GRU will be a 3D tensor of shape (batch_size, timesteps, 256)
-    X = layers.GRU(params.h1_units, return_sequences=True, dropout=params.dropout_rate, recurrent_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda))(X_inp)
+    X = layers.SimpleRNN(params.h1_units, return_sequences=True, dropout=params.dropout_rate, recurrent_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda))(X_inp)
     # The output of SimpleRNN will be a 2D tensor of shape (batch_size, 128)
     X = layers.SimpleRNN(params.h2_units, dropout=params.dropout_rate, recurrent_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda))(X)
     outputs = layers.Dense(1)(X)
