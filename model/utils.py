@@ -3,6 +3,7 @@ import json
 import logging
 import numpy as np
 import tensorflow as tf
+from keras.layers import TextVectorization
 
 
 # File from https://github.com/cs230-stanford/cs230-code-examples/blob/master/tensorflow/nlp/model/utils.py
@@ -98,6 +99,37 @@ def read_glove_vecs(glove_file):
             i = i + 1
     return words_to_index, index_to_words, word_to_vec_map
 
+def read_glove_ves2(glove_file):
+    embeddings_index = {}
+    with open(glove_file) as f:
+        for line in f:
+            word, coefs = line.split(maxsplit=1)
+            coefs = np.fromstring(coefs, "f", sep=" ")
+            embeddings_index[word] = coefs
+
+    print("Found %s word vectors." % len(embeddings_index))
+    return embeddings_index
+
+def build_glove_embedding_matrix(glove_file, voc_length, word_index):
+    num_tokens = voc_length + 2
+    embedding_dim = 100
+    hits = 0
+    misses = 0
+    embeddings_index = read_glove_ves2(glove_file)
+
+    # Prepare embedding matrix
+    embedding_matrix = np.zeros((num_tokens, embedding_dim))
+    for word, i in word_index.items():
+        embedding_vector = embeddings_index.get(word)
+        if embedding_vector is not None:
+            # Words not found in embedding index will be all-zeros.
+            # This includes the representation for "padding" and "OOV"
+            embedding_matrix[i] = embedding_vector
+            hits += 1
+        else:
+            misses += 1
+    print("Converted %d words (%d misses)" % (hits, misses))
+    return embedding_matrix
 
 def sentence_to_avg(sentence, word_to_vec_map, any_word):
     """

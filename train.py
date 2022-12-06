@@ -7,7 +7,7 @@ import os
 from model.utils import Params
 from model.utils import set_logger
 from model.training import train_and_evaluate
-from model.input_fn import input_fn, input_fn_bert
+from model.input_fn import input_fn, input_fn_bert_lstm, input_fn_bert_rnn
 from model.model_fn import model_fn
 from model.visualize import metrics_to_plot
 
@@ -67,24 +67,25 @@ if __name__ == '__main__':
         params.embeddings = "GloVe"
     elif args.which_embeddings == "SBERT":
         params.embeddings = "SBERT"
-    elif args.which_embeddings == 'BERT':
-        params.embeddings = 'BERT'
     elif args.which_embeddings == "None":
         params.embeddings = None
     else:
         raise NotImplementedError("Unknown embeddings option: {}".format(args.which_embeddings))
 
-    if params.embeddings == 'BERT':
+    if params.model_version == 'BERT':
         logging.info('Making bert dataset')
-        inputs = input_fn_bert(bert_dataset)
+        inputs = input_fn_bert_lstm(bert_dataset)
+    if params.model_version == 'BERT_RNN':
+        logging.info('Making bert dataset')
+        inputs = input_fn_bert_rnn(bert_dataset)
     else:
         inputs = input_fn(pos_dataset, neg_dataset)
     logging.info("- done.")
 
     # Define the models (2 different set of nodes that share weights for train and eval)
     logging.info("Creating the model...")
-    if args.which_embeddings == 'None' or args.which_embeddings == 'BERT':
-        print('which embeddings == None or BERT: train - 58')
+    if args.which_embeddings == 'None':
+        print('which embeddings == None, BERT or BERT_RNN: train - 58')
         train_model, inputs = model_fn(inputs, params)
     elif args.which_embeddings == 'SBERT':
         print('which embeddings == SBERT: train - 62')

@@ -52,14 +52,20 @@ def load_data_to_df(path):
 
     return df
 
-def load_bert_data_to_df(path):
+def load_bert_lstm_data_to_df(path):
     df = pd.read_csv(path, compression='gzip')
     df = df.groupby('post_id').agg({"text": lambda x: list(x), "author": "first", "q_level": "first"})
     df = df.groupby('author').agg({"text": lambda x: list(x), "q_level": "first"})
 
     return df
 
-def convert_bert_df_to_tensor(df):
+def load_bert_rnn_data_to_df(path):
+    df = pd.read_csv(path, compression='gzip')
+    df = df.groupby('author').agg({"text": lambda x: list(x), "q_level": "first"})
+
+    return df
+
+def convert_bert_lstm_df_to_tensor(df):
     authors = []
     for e in df['text'].items():
         posts = []
@@ -87,6 +93,22 @@ def convert_bert_df_to_tensor(df):
     #     ], axis=0)
 
 
+def convert_bert_rnn_df_to_tensor(df):
+    authors = []
+    for i, e in enumerate(df['text']):
+        # if i < 100:
+            sentences = e
+            # del sentences[5:]
+            try:
+                authors.append(tf.strings.lower(tf.ragged.constant(sentences)))
+            except ValueError:
+                authors.append(tf.strings.lower(tf.ragged.constant([w for w in sentences if isinstance(w, str)])))
+        # authors.append(tf.ragged.stack([
+        #     tf.strings.lower(tf.ragged.constant(post)) for post in e[1]
+        # ], axis=0))
+
+    return tf.ragged.stack(authors, axis=0)
+
 def load_all_data_to_df(pos_path, neg_path):
     pos = load_data_to_df(pos_path)
     neg = load_data_to_df(neg_path)
@@ -96,14 +118,14 @@ def load_all_data_to_df(pos_path, neg_path):
     return features
 
 
-def input_fn_bert(bert_path):
+def input_fn_bert_rnn(bert_path):
     """Input function for NER
     Args:
         bert_path: (string) relative path to labels and features csv
     """
     # Load the dataset into memory
     print("Loading QAnon dataset and creating df...")
-    df = load_bert_data_to_df(bert_path)
+    df = load_bert_rnn_data_to_df(bert_path)
 
     # split into train/dev/test
     np.random.seed(0)
@@ -112,19 +134,61 @@ def input_fn_bert(bert_path):
 
     print("Splitting data into train dev test")
     train_df = df[indices == 0]
-    words_train = convert_bert_df_to_tensor(train_df)
+    words_train = convert_bert_rnn_df_to_tensor(train_df)
     labels_train = tf.convert_to_tensor(train_df["q_level"])
     train_ds = tf.data.Dataset.from_tensor_slices((words_train, labels_train))\
         .shuffle(16, reshuffle_each_iteration=True).batch(16)
 
     val_df = df[indices == 1]
-    words_val = convert_bert_df_to_tensor(val_df)
+    words_val = convert_bert_rnn_df_to_tensor(val_df)
     labels_val = tf.convert_to_tensor(val_df["q_level"])
     val_ds = tf.data.Dataset.from_tensor_slices((words_val, labels_val))\
         .shuffle(16, reshuffle_each_iteration=True).batch(16)
 
     test_df = df[indices == 2]
-    words_test = convert_bert_df_to_tensor(test_df)
+    words_test = convert_bert_rnn_df_to_tensor(test_df)
+    labels_test = tf.convert_to_tensor(test_df["q_level"])
+    test_ds = tf.data.Dataset.from_tensor_slices((words_test, labels_test))\
+        .shuffle(3, reshuffle_each_iteration=True).batch(3)
+
+    print("Done data processing")
+    inputs = {
+        'train': (words_train, labels_train, train_ds),
+        'val': (words_val, labels_val, val_ds),
+        'test': (words_test, labels_test, test_ds),
+    }
+
+    return inputs
+
+def input_fn_bert_lstm(bert_path):
+    """Input function for NER
+    Args:
+        bert_path: (string) relative path to labels and features csv
+    """
+    # Load the dataset into memory
+    print("Loading QAnon dataset and creating df...")
+    df = load_bert_lstm_data_to_df(bert_path)
+
+    # split into train/dev/test
+    np.random.seed(0)
+    # indices = np.random.choice(a=[0, 1, 2, 3], size=len(df), p=[.03, .01, .01, 0.95])
+    indices = np.random.choice(a=[0, 1, 2], size=len(df), p=[.6, .2, .2])
+
+    print("Splitting data into train dev test")
+    train_df = df[indices == 0]
+    words_train = convert_bert_lstm_df_to_tensor(train_df)
+    labels_train = tf.convert_to_tensor(train_df["q_level"])
+    train_ds = tf.data.Dataset.from_tensor_slices((words_train, labels_train))\
+        .shuffle(3, reshuffle_each_iteration=True).batch(3)
+
+    val_df = df[indices == 1]
+    words_val = convert_bert_lstm_df_to_tensor(val_df)
+    labels_val = tf.convert_to_tensor(val_df["q_level"])
+    val_ds = tf.data.Dataset.from_tensor_slices((words_val, labels_val))\
+        .shuffle(3, reshuffle_each_iteration=True).batch(3)
+
+    test_df = df[indices == 2]
+    words_test = convert_bert_lstm_df_to_tensor(test_df)
     labels_test = tf.convert_to_tensor(test_df["q_level"])
     test_ds = tf.data.Dataset.from_tensor_slices((words_test, labels_test))\
         .shuffle(16, reshuffle_each_iteration=True).batch(16)

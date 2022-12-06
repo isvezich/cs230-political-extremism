@@ -15,6 +15,7 @@ from keras import backend as K
 from keras.losses import BinaryCrossentropy
 
 from model.sentence_bert_lstm import SentenceBertLSTM
+from model.sentence_bert_rnn import SentenceBertRNN
 from model.utils import read_glove_vecs, sentence_to_avg, sentences_to_indices, sentence_to_sbert_avg, \
     sentence_to_sbert_seq
 from model.utils import read_glove_vecs, sentence_to_avg, sentences_to_indices
@@ -163,8 +164,22 @@ def rnn_model(params, maxLen=None, word_to_vec_map=None, word_to_index=None, vec
     return model
 
 def bert_to_lstm_model(params):
-    inputs = Input(shape=(None, None, None), dtype='string')
+    inputs = Input(shape=(None, None), dtype='string')
     X = SentenceBertLSTM(params.model_id, params)(inputs)
+    # X = layers.Dense(params.h1_units,
+    #                        activation='relu',
+    #                        kernel_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda),
+    #                        kernel_initializer=tf.keras.initializers.HeUniform())(X)
+    # X = layers.BatchNormalization()(X)
+    outputs = layers.Dense(1)(X)
+    print(f"output shape: {X.shape}")
+    model = Model(inputs, outputs)
+
+    return model
+
+def bert_to_rnn_model(params):
+    inputs = Input(shape=(None, ), dtype='string')
+    X = SentenceBertRNN(params.model_id, params)(inputs)
     # X = layers.Dense(params.h1_units,
     #                        activation='relu',
     #                        kernel_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda),
@@ -282,10 +297,12 @@ def model_fn(inputs, params, embeddings_path=None):
             for i in range(inputs['test'][0].shape[0]):
                 str_feat_test.append(sentence_to_sbert_seq(inputs['test'][0][i], model))
             print('finished sentence embeddings for test')
-            inputs['train'][0] = tf.cast(tf.stack(str_feat_train), 'float64')
-            inputs['val'][0] = tf.cast(tf.stack(str_feat_val), 'float64')
-            inputs['test'][0] = tf.cast(tf.stack(str_feat_test), 'float64')
+            inputs['train'][0] = tf.cast(tf.ragged.stack(str_feat_train), 'float64')
+            inputs['val'][0] = tf.cast(tf.ragged.stack(str_feat_val), 'float64')
+            inputs['test'][0] = tf.cast(tf.ragged.stack(str_feat_test), 'float64')
             maxLen = len(max(inputs['train'][0].numpy(), key=len).split())
+            print("MAX LEN")
+            print(maxLen)
             model = rnn_model(params, maxLen=maxLen)
         elif params.embeddings == None:
             # instantiate embedding layer
@@ -299,6 +316,8 @@ def model_fn(inputs, params, embeddings_path=None):
             raise NotImplementedError("invalid embedding type")
     elif params.model_version == 'BERT':
         model = bert_to_lstm_model(params)
+    elif params.model_version == 'BERT_RNN':
+        model = bert_to_rnn_model(params)
     else:
         raise NotImplementedError("Unknown model version: {}".format(params.model_version))
 
