@@ -13,5 +13,6 @@
     "batch_size": 3,
     "sentences_length": 5,
     "posts_length": 100,
+    "sample_rate": 1.0,
     "embeddings": "None"
 }

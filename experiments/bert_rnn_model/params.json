@@ -8,6 +8,6 @@
     "early_stopping_patience": 10,
     "dropout_rate": 0.1,
     "batch_size": 3,
-    "sentences_length": 3,
+    "sentences_length": 1000,
     "embeddings": "None"
 }

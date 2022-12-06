@@ -108,11 +108,11 @@ def convert_bert_rnn_df_to_tensor(df, params):
 
     return tf.ragged.stack(authors, axis=0)
 
-def load_all_data_to_df(pos_path, neg_path):
+def load_all_data_to_df(pos_path, neg_path, params):
     pos = load_data_to_df(pos_path)
     neg = load_data_to_df(neg_path)
     features = pd.concat([pos, neg])
-    features = features.sample(frac=1).reset_index()
+    features = features.sample(frac=params.sample_rate).reset_index()
 
     return features
 
@@ -201,7 +201,7 @@ def input_fn_bert_lstm(bert_path, params):
 
     return inputs
 
-def input_fn(pos_path, neg_path):
+def input_fn(pos_path, neg_path, params):
     """Input function for NER
     Args:
         labels_path: (string) relative path to labels csv
@@ -209,7 +209,7 @@ def input_fn(pos_path, neg_path):
     """
     # Load the dataset into memory
     print("Loading QAnon dataset and creating df...")
-    df = load_all_data_to_df(pos_path, neg_path)
+    df = load_all_data_to_df(pos_path, neg_path, params)
 
     # convert to tensor to input to model
     words = tf.convert_to_tensor(df["words"], dtype=tf.string)

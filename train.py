@@ -24,6 +24,8 @@ parser.add_argument('--learning_rate', default=0.001, help="Learning rate")
 parser.add_argument('--batch_size', default=32, help="Batch size")
 parser.add_argument('--num_epochs', default=2, help="Num epochs")
 parser.add_argument('--dropout_rate', default=0.1, help="Dropout rate")
+parser.add_argument('--early_stopping_patience', default=10, help="Early stopping patience")
+parser.add_argument('--sample_rate', default=1., help="Percent of data to use")
 
 if __name__ == '__main__':
     # Load the parameters from the experiment params.json file in model_dir
@@ -45,6 +47,10 @@ if __name__ == '__main__':
         params.num_epochs = int(args.num_epochs)
     if args.dropout_rate:
         params.dropout_rate = float(args.dropout_rate)
+    if args.early_stopping_patience:
+        params.early_stopping_patience = int(args.early_stopping_patience)
+    if args.sample_rate:
+        params.sample_rate = float(args.sample_rate)
 
     # Set the logger
     set_logger(os.path.join(args.model_dir, 'train.log'))
@@ -79,7 +85,7 @@ if __name__ == '__main__':
         logging.info('Making bert dataset')
         inputs = input_fn_bert_rnn(bert_dataset, params)
     else:
-        inputs = input_fn(pos_dataset, neg_dataset)
+        inputs = input_fn(pos_dataset, neg_dataset, params)
     logging.info("- done.")
 
     # Define the models (2 different set of nodes that share weights for train and eval)
