@@ -95,10 +95,9 @@ def convert_bert_lstm_df_to_tensor(df):
 
 def convert_bert_rnn_df_to_tensor(df):
     authors = []
-    for i, e in enumerate(df['text']):
+    for i, sentences in enumerate(df['text']):
         # if i < 100:
-            sentences = e
-            # del sentences[5:]
+            del sentences[1000:]
             try:
                 authors.append(tf.strings.lower(tf.ragged.constant(sentences)))
             except ValueError:
@@ -137,13 +136,13 @@ def input_fn_bert_rnn(bert_path):
     words_train = convert_bert_rnn_df_to_tensor(train_df)
     labels_train = tf.convert_to_tensor(train_df["q_level"])
     train_ds = tf.data.Dataset.from_tensor_slices((words_train, labels_train))\
-        .shuffle(16, reshuffle_each_iteration=True).batch(16)
+        .shuffle(16, reshuffle_each_iteration=True).batch(3)
 
     val_df = df[indices == 1]
     words_val = convert_bert_rnn_df_to_tensor(val_df)
     labels_val = tf.convert_to_tensor(val_df["q_level"])
     val_ds = tf.data.Dataset.from_tensor_slices((words_val, labels_val))\
-        .shuffle(16, reshuffle_each_iteration=True).batch(16)
+        .shuffle(16, reshuffle_each_iteration=True).batch(3)
 
     test_df = df[indices == 2]
     words_test = convert_bert_rnn_df_to_tensor(test_df)
