@@ -154,7 +154,7 @@ def rnn_model(params, maxLen=None, word_to_vec_map=None, word_to_index=None, vec
             # Use masking to handle the variable sequence lengths
             mask_zero=True)(X_inp)
     # The output of GRU will be a 3D tensor of shape (batch_size, timesteps, 256)
-    X = layers.GRU(params.h1_units, return_sequences=True, dropout=params.dropout_rate, recurrent_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda))(X_inp)
+    X = layers.SimpleRNN(params.h1_units, return_sequences=True, dropout=params.dropout_rate, recurrent_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda))(X_inp)
     # The output of SimpleRNN will be a 2D tensor of shape (batch_size, 128)
     X = layers.SimpleRNN(params.h2_units, dropout=params.dropout_rate, recurrent_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda))(X)
     outputs = layers.Dense(1)(X)
@@ -304,7 +304,7 @@ def model_fn(inputs, params, embeddings_path=None):
 
     # compile model
     model.compile(loss=BinaryCrossentropy(from_logits=True),
-                  optimizer=tf.keras.optimizers.Adam(learning_rate=params.learning_rate),
+                  optimizer=tf.keras.optimizers.Adam(learning_rate=params.learning_rate, clipnorm=1.0),
                   metrics=[tf.metrics.BinaryAccuracy(threshold=0.0), f1_m, precision_m, recall_m#,
                            ])
                            #tf.metrics.AUC(from_logits=True)])
