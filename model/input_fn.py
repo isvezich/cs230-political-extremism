@@ -113,6 +113,7 @@ def load_all_data_to_df(pos_path, neg_path, params):
     neg = load_data_to_df(neg_path)
     features = pd.concat([pos, neg])
     features = features.sample(frac=params.sample_rate).reset_index()
+    print(f"length of features: {len(features)}")
 
     return features
 
