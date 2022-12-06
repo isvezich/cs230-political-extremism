@@ -280,7 +280,7 @@ def model_fn(inputs, params, embeddings_path=None):
                 str_feat_val.append(sentence_to_sbert_seq(inputs['val'][0][i], model))
             print('finished sentence embeddings for val')
             for i in range(inputs['test'][0].shape[0]):
-                str_feat_train.append(sentence_to_sbert_seq(inputs['test'][0][i], model))
+                str_feat_test.append(sentence_to_sbert_seq(inputs['test'][0][i], model))
             print('finished sentence embeddings for test')
             inputs['train'][0] = tf.cast(tf.stack(str_feat_train), 'float64')
             inputs['val'][0] = tf.cast(tf.stack(str_feat_val), 'float64')
