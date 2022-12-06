@@ -115,19 +115,19 @@ def input_fn_bert(bert_path):
     words_train = convert_bert_df_to_tensor(train_df)
     labels_train = tf.convert_to_tensor(train_df["q_level"])
     train_ds = tf.data.Dataset.from_tensor_slices((words_train, labels_train))\
-        .shuffle(3, reshuffle_each_iteration=True).batch(3)
+        .shuffle(16, reshuffle_each_iteration=True).batch(16)
 
     val_df = df[indices == 1]
     words_val = convert_bert_df_to_tensor(val_df)
     labels_val = tf.convert_to_tensor(val_df["q_level"])
     val_ds = tf.data.Dataset.from_tensor_slices((words_val, labels_val))\
-        .shuffle(3, reshuffle_each_iteration=True).batch(3)
+        .shuffle(16, reshuffle_each_iteration=True).batch(16)
 
     test_df = df[indices == 2]
     words_test = convert_bert_df_to_tensor(test_df)
     labels_test = tf.convert_to_tensor(test_df["q_level"])
     test_ds = tf.data.Dataset.from_tensor_slices((words_test, labels_test))\
-        .shuffle(3, reshuffle_each_iteration=True).batch(3)
+        .shuffle(16, reshuffle_each_iteration=True).batch(16)
 
     print("Done data processing")
     inputs = {
