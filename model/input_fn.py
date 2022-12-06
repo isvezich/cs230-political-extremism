@@ -52,16 +52,20 @@ def load_data_to_df(path):
 
     return df
 
-def load_bert_lstm_data_to_df(path):
+def load_bert_lstm_data_to_df(path, params):
     df = pd.read_csv(path, compression='gzip')
     df = df.groupby('post_id').agg({"text": lambda x: list(x), "author": "first", "q_level": "first"})
     df = df.groupby('author').agg({"text": lambda x: list(x), "q_level": "first"})
+    df = df.sample(frac=params.sample_rate).reset_index()
+    print(f"length of features: {len(df)}")
 
     return df
 
-def load_bert_rnn_data_to_df(path):
+def load_bert_rnn_data_to_df(path, params):
     df = pd.read_csv(path, compression='gzip')
     df = df.groupby('author').agg({"text": lambda x: list(x), "q_level": "first"})
+    df = df.sample(frac=params.sample_rate).reset_index()
+    print(f"length of features: {len(df)}")
 
     return df
 
@@ -125,7 +129,7 @@ def input_fn_bert_rnn(bert_path, params):
     """
     # Load the dataset into memory
     print("Loading QAnon dataset and creating df...")
-    df = load_bert_rnn_data_to_df(bert_path)
+    df = load_bert_rnn_data_to_df(bert_path, params)
 
     # split into train/dev/test
     np.random.seed(0)
@@ -167,7 +171,7 @@ def input_fn_bert_lstm(bert_path, params):
     """
     # Load the dataset into memory
     print("Loading QAnon dataset and creating df...")
-    df = load_bert_lstm_data_to_df(bert_path)
+    df = load_bert_lstm_data_to_df(bert_path, params)
 
     # split into train/dev/test
     np.random.seed(0)
