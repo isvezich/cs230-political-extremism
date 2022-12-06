@@ -27,6 +27,7 @@ def load_data_to_df(path):
     # concatenate title & body text into 1 string to create embedding from all the words that
     # author ever wrote--we should consider better ways to do this
     df["words"] = (df["title"] + df["selftext"]).astype(str)
+    df.dropna(subset=['words', 'q_level'], inplace=True)
     print(df['q_level'].value_counts())
     print(df.head())
 
