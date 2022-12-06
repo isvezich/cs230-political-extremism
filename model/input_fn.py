@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import tensorflow as tf
+import json
 
 from model.model_fn import custom_standardization
 
@@ -24,9 +25,27 @@ def load_data_to_df(path):
         }
     )
 
+    # x = "abcd"
+    # abcd
+    #
+    # "abcd"
+    # y = list(x, x, x)
+    # # array of 3 elements, abcd, abcd, abcd
+    #
+    # encoded_y = "[\"abcd\", \"abcd\", \"abcd\"]"
+    #
+    # "abcd" -> json string
+    # 123.456 -> json number
+    # [123, "abcd"] -> json array
+    # {
+    #     "ab": "cd"
+    #     "de", 123.456
+    # }
+
     # concatenate title & body text into 1 string to create embedding from all the words that
     # author ever wrote--we should consider better ways to do this
-    df["words"] = (df["title"] + df["selftext"]).astype(str)
+    # df["words"] = json.dumps(df["title"] + df["selftext"])#.astype(str)
+    df["words"] = (df["title"] + df["selftext"]).apply(lambda x: json.dumps(x))
     df.dropna(subset=['words', 'q_level'], inplace=True)
     print(df['q_level'].value_counts())
     print(df.head())

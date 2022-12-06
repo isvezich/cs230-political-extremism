@@ -1,5 +1,4 @@
 """General utility functions"""
-
 import json
 import logging
 import numpy as np
@@ -113,7 +112,7 @@ def sentence_to_avg(sentence, word_to_vec_map, any_word):
     avg -- average vector encoding information about the sentence, numpy-array of shape (J,), where J can be any number
     """
     # Step 1: Split sentence into list of lower case words (≈ 1 line)
-    words = sentence.numpy().decode("utf-8").lower().split(",")
+    words = sentence.numpy().decode("utf-8").lower().split()
 
     # Initialize the average word vector, should have the same shape as your word vectors.
     # Use `np.zeros` and pass in the argument of any word's word 2 vec's shape
@@ -181,14 +180,16 @@ def sentences_to_indices(X, word_to_index, max_len):
 
 
 def sentence_to_sbert_avg(inp, model):
-    sentences = inp.numpy().decode("utf-8").lower().split(",")
+    sentences = json.loads(inp.numpy().decode("utf-8"))
+    sentences = [s for s in sentences if isinstance(s, str)]
     sentence_embeddings = model.encode(sentences)
     sentence_embeddings = np.mean(sentence_embeddings, axis=0)
     return tf.convert_to_tensor(sentence_embeddings)
 
 
 def sentence_to_sbert_seq(inp, model):
-    sentences = inp.numpy().decode("utf-8").lower().split(",")
+    sentences = json.loads(inp.numpy().decode("utf-8"))
+    sentences = [s for s in sentences if isinstance(s, str)]
     sentence_embeddings = model.encode(sentences)
     return sentence_embeddings
 
