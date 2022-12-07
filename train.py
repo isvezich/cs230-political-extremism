@@ -91,6 +91,9 @@ if __name__ == '__main__':
     if params.model_version == 'BERT_RNN':
         logging.info('Making bert dataset')
         inputs = input_fn_bert_rnn(bert_dataset, params)
+    if params.model_version == 'BERT_MLP':
+        logging.info('Making bert dataset')
+        inputs = input_fn_bert_rnn(bert_dataset, params)  # calling rnn is intentional
     else:
         inputs = input_fn(pos_dataset, neg_dataset, params)
     logging.info("- done.")
