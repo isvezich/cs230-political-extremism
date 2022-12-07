@@ -1,0 +1,16 @@
+{
+    "model_version": "lstm",
+    "max_features": 10000,
+    "sequence_length": 600,
+    "h1_units": 64,
+    "h2_units": 32,
+    "l2_reg_lambda": 1e-2,
+    "embedding_size": 64,
+    "learning_rate": 0.001,
+    "batch_size": 32,
+    "num_epochs": 30,
+    "early_stopping_patience": 10,
+    "dropout_rate": 0.1,
+    "sample_rate": 1.0,
+    "embeddings": "None"
+}

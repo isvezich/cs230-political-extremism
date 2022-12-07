@@ -230,19 +230,27 @@ def input_fn(pos_path, neg_path, params):
     score_train = score[indices == 0]
     num_replies_train = num_replies[indices == 0]
     labels_train = labels[indices == 0]
+    train_ds = tf.data.Dataset.from_tensor_slices((words_train, labels_train)) \
+        .shuffle(params.batch_size, reshuffle_each_iteration=True).batch(params.batch_size)
+
     words_val = words[indices == 1]
     score_val = score[indices == 1]
     num_replies_val = num_replies[indices == 1]
     labels_val = labels[indices == 1]
+    val_ds = tf.data.Dataset.from_tensor_slices((words_val, labels_val))\
+        .shuffle(params.batch_size, reshuffle_each_iteration=True).batch(params.batch_size)
+
     words_test = words[indices == 2]
     score_test = score[indices == 2]
     num_replies_test = num_replies[indices == 2]
     labels_test = labels[indices == 2]
+    test_ds = tf.data.Dataset.from_tensor_slices((words_test, labels_test))\
+        .shuffle(params.batch_size, reshuffle_each_iteration=True).batch(params.batch_size)
 
     inputs = {
-        'train': [words_train, score_train, num_replies_train, labels_train],
-        'val': [words_val, score_val, num_replies_val, labels_val],
-        'test': [words_test, score_test, num_replies_test, labels_test],
+        'train': [words_train, score_train, num_replies_train, labels_train, train_ds],
+        'val': [words_val, score_val, num_replies_val, labels_val, val_ds],
+        'test': [words_test, score_test, num_replies_test, labels_test, test_ds],
     }
 
     return inputs

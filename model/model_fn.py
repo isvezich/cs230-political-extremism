@@ -163,6 +163,21 @@ def rnn_model(params, maxLen=None, word_to_vec_map=None, word_to_index=None, vec
 
     return model
 
+def lstm_model(params, vectorize_layer=None):
+    inputs = Input(shape=(), dtype='string')
+    X_inp = vectorize_layer(inputs)
+    X_inp = layers.Embedding(
+        input_dim=len(vectorize_layer.get_vocabulary()),
+        output_dim=params.embedding_size,
+        # Use masking to handle the variable sequence lengths
+        mask_zero=True)(X_inp)
+    X = layers.LSTM(params.h1_units, return_sequences=True, dropout=params.dropout_rate, recurrent_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda))(X_inp)
+    X = layers.LSTM(params.h2_units, dropout=params.dropout_rate, recurrent_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda))(X)
+    outputs = layers.Dense(1)(X)
+    model = Model(inputs, outputs)
+
+    return model
+
 def bert_to_lstm_model(params):
     inputs = Input(shape=(None, None), dtype='string')
     X = SentenceBertLSTM(params.model_id, params)(inputs)
@@ -312,6 +327,17 @@ def model_fn(inputs, params, embeddings_path=None):
                 output_mode='int')
             vectorize_layer.adapt(inputs['train'][0])
             model = rnn_model(params, vectorize_layer=vectorize_layer)
+        else:
+            raise NotImplementedError("invalid embedding type")
+    elif params.model_version == 'lstm':
+        if params.embeddings == None:
+            # instantiate embedding layer
+            vectorize_layer = TextVectorization(
+                standardize=custom_standardization,
+                max_tokens=params.max_features,
+                output_mode='int')
+            vectorize_layer.adapt(inputs['train'][0])
+            model = lstm_model(params, vectorize_layer=vectorize_layer)
         else:
             raise NotImplementedError("invalid embedding type")
     elif params.model_version == 'BERT':
