@@ -26,6 +26,8 @@ parser.add_argument('--num_epochs', default=2, help="Num epochs")
 parser.add_argument('--dropout_rate', default=0.1, help="Dropout rate")
 parser.add_argument('--early_stopping_patience', default=10, help="Early stopping patience")
 parser.add_argument('--sample_rate', default=1., help="Percent of data to use")
+parser.add_argument('--sentences_length', default=100)
+parser.add_argument('--max_features', default=5000)
 
 if __name__ == '__main__':
     # Load the parameters from the experiment params.json file in model_dir
@@ -51,6 +53,11 @@ if __name__ == '__main__':
         params.early_stopping_patience = int(args.early_stopping_patience)
     if args.sample_rate:
         params.sample_rate = float(args.sample_rate)
+    if args.sentences_length:
+        params.sentences_length = int(args.sentences_length)
+    if args.max_features:
+        params.max_features = int(args.max_features)
+
 
     # Set the logger
     set_logger(os.path.join(args.model_dir, 'train.log'))
