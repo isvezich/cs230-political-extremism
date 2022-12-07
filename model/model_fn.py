@@ -16,6 +16,7 @@ from keras.losses import BinaryCrossentropy
 
 from model.sentence_bert_lstm import SentenceBertLSTM
 from model.sentence_bert_rnn import SentenceBertRNN
+from model.sentence_bert_mlp import SentenceBertMLP
 from model.utils import read_glove_vecs, sentence_to_avg, sentences_to_indices, sentence_to_sbert_avg, \
     sentence_to_sbert_seq
 from model.utils import read_glove_vecs, sentence_to_avg, sentences_to_indices
@@ -206,6 +207,21 @@ def bert_to_rnn_model(params):
 
     return model
 
+def bert_to_mlp_model(params):
+    inputs = Input(shape=(None, ), dtype='string')
+    X = SentenceBertMLP(params.model_id, params)(inputs)
+    X = layers.Dense(params.h2_units,
+                           activation='relu',
+                           dropout=params.dropout_rate,
+                           kernel_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda),
+                           kernel_initializer=tf.keras.initializers.HeUniform())(X)
+    X = layers.BatchNormalization()(X)
+    outputs = layers.Dense(1)(X)
+    print(f"output shape: {X.shape}")
+    model = Model(inputs, outputs)
+
+    return model
+
 
 def model_fn(inputs, params, embeddings_path=None):
     """Compute logits of the model (output distribution)
@@ -344,6 +360,8 @@ def model_fn(inputs, params, embeddings_path=None):
         model = bert_to_lstm_model(params)
     elif params.model_version == 'BERT_RNN':
         model = bert_to_rnn_model(params)
+    elif params.model_version == 'BERT_MLP':
+        model = bert_to_mlp_model(params)
     else:
         raise NotImplementedError("Unknown model version: {}".format(params.model_version))
 
