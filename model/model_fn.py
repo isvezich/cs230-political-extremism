@@ -210,11 +210,16 @@ def bert_to_rnn_model(params):
 def bert_to_mlp_model(params):
     inputs = Input(shape=(None, ), dtype='string')
     X = SentenceBertMLP(params.model_id, params)(inputs)
-    # X = layers.Dense(params.h2_units,
-    #                        activation='relu',
-    #                        kernel_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda),
-    #                        kernel_initializer=tf.keras.initializers.HeUniform())(X)
-    # X = layers.BatchNormalization()(X)
+    X = tf.keras.layers.Dense(params.h1_units,
+                          activation='relu',
+                          kernel_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda),
+                          kernel_initializer=tf.keras.initializers.HeUniform())(X)
+    X = layers.BatchNormalization()(X)
+    X = layers.Dense(params.h2_units,
+                           activation='relu',
+                           kernel_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda),
+                           kernel_initializer=tf.keras.initializers.HeUniform())(X)
+    X = layers.BatchNormalization()(X)
     outputs = layers.Dense(1)(X)
     print(f"output shape: {X.shape}")
     model = Model(inputs, outputs)

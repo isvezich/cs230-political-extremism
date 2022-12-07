@@ -11,10 +11,7 @@ class SentenceBertMLP(tf.keras.Model):
         self.params = params
 
     def build(self, inputs):
-        self.mlp = tf.keras.layers.Dense(self.params.h1_units,
-                           activation='relu',
-                           kernel_regularizer=tf.keras.regularizers.L2(self.params.l2_reg_lambda),
-                           kernel_initializer=tf.keras.initializers.HeUniform())
+        self.mlp = tf.keras.layers.GlobalAveragePooling1D(data_format='channels_last', keepdims=False)
 
     def embed_author(self, posts):
         post_model = self.model(posts)
