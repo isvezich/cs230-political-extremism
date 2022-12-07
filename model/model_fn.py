@@ -214,7 +214,7 @@ def bert_to_mlp_model(params):
                            activation='relu',
                            kernel_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda),
                            kernel_initializer=tf.keras.initializers.HeUniform())(X)
-    X = layers.BatchNormalization()(X)
+    # X = layers.BatchNormalization()(X)
     outputs = layers.Dense(1)(X)
     print(f"output shape: {X.shape}")
     model = Model(inputs, outputs)
