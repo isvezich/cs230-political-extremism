@@ -13,7 +13,6 @@ class SentenceBertMLP(tf.keras.Model):
     def build(self, inputs):
         self.mlp = tf.keras.layers.Dense(self.params.h1_units,
                            activation='relu',
-                           dropout=self.params.dropout_rate,
                            kernel_regularizer=tf.keras.regularizers.L2(self.params.l2_reg_lambda),
                            kernel_initializer=tf.keras.initializers.HeUniform())
 

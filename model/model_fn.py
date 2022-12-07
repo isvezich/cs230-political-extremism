@@ -212,7 +212,6 @@ def bert_to_mlp_model(params):
     X = SentenceBertMLP(params.model_id, params)(inputs)
     X = layers.Dense(params.h2_units,
                            activation='relu',
-                           dropout=params.dropout_rate,
                            kernel_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda),
                            kernel_initializer=tf.keras.initializers.HeUniform())(X)
     X = layers.BatchNormalization()(X)
