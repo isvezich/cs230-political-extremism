@@ -101,7 +101,7 @@ if __name__ == '__main__':
     # Define the models (2 different set of nodes that share weights for train and eval)
     logging.info("Creating the model...")
     if args.which_embeddings == 'None':
-        print('which embeddings == None, BERT or BERT_RNN: train - 58')
+        print('which embeddings == None, BERT, BERT_RNN, or BERT_MLP: train - 58')
         train_model, inputs = model_fn(inputs, params)
     elif args.which_embeddings == 'SBERT':
         print('which embeddings == SBERT: train - 62')

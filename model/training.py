@@ -21,7 +21,7 @@ def train_and_evaluate(inputs, model, params):
         TensorBoard(logdir, histogram_freq=0)  # https://github.com/keras-team/keras/issues/15163
     ]
 
-    if params.model_version == 'BERT' or params.model_version == 'BERT_RNN':
+    if params.model_version == 'BERT' or params.model_version == 'BERT_RNN' or params.model_version == 'BERT_MLP':
         train_ds = inputs['train'][2]
         val_ds = inputs['val'][2]
         test_ds = inputs['test'][2]
