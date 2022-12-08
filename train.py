@@ -28,6 +28,7 @@ parser.add_argument('--early_stopping_patience', default=10, help="Early stoppin
 parser.add_argument('--sample_rate', default=1., help="Percent of data to use")
 parser.add_argument('--sentences_length', default=100)
 parser.add_argument('--max_features', default=5000)
+parser.add_argument('--embedding_size', default=128)
 
 if __name__ == '__main__':
     # Load the parameters from the experiment params.json file in model_dir
