@@ -362,8 +362,8 @@ def model_fn(inputs, params, embeddings_path=None):
     # compile model
     model.compile(loss=BinaryCrossentropy(from_logits=True),
                   optimizer=tf.keras.optimizers.Adam(learning_rate=params.learning_rate, clipnorm=1.0),
-                  metrics=[tf.metrics.BinaryAccuracy(threshold=0.0), f1_m, tf.metrics.Precision(threshold=0.0),
-                           tf.metrics.Recall(threshold=0.0)
+                  metrics=[tf.metrics.BinaryAccuracy(threshold=0.0), f1_m, tf.metrics.Precision(thresholds=0.0),
+                           tf.metrics.Recall(thresholds=0.0)
                            ])
     print(model.summary())
 
