@@ -1,6 +1,7 @@
 import nltk
 import tensorflow as tf
 import tensorflow_text as text
+import tensorflow_addons as tfa
 from keras import layers
 from keras.layers import Embedding, Input, Layer, TextVectorization
 from keras.models import Model
@@ -48,7 +49,6 @@ def f1_m(y_true, y_pred):
     recall = recall_m(y_true, y_pred)
     return 2*((precision*recall)/(precision+recall+K.epsilon()))
 
-
 # clean up junk from string
 def custom_standardization(input_data):
     cachedStopWords = stopwords.words("english")
@@ -94,7 +94,7 @@ def pretrained_embedding_layer(word_to_vec_map, word_to_index):
     # Step 3
     # Define Keras embedding layer with the correct input and output sizes
     # Make it non-trainable.
-    embedding_layer = Embedding(vocab_size, emb_dim)
+    embedding_layer = Embedding(vocab_size, emb_dim, trainable=False)
     ### END CODE HERE ###
 
     # Step 4 (already done for you; please do not modify)
@@ -167,14 +167,24 @@ def rnn_model(params, maxLen=None, word_to_vec_map=None, word_to_index=None, vec
 
     return model
 
-def lstm_model(params, vectorize_layer=None):
-    inputs = Input(shape=(), dtype='string')
-    X_inp = vectorize_layer(inputs)
-    X_inp = layers.Embedding(
-        input_dim=len(vectorize_layer.get_vocabulary()),
-        output_dim=params.embedding_size,
-        # Use masking to handle the variable sequence lengths
-        mask_zero=True)(X_inp)
+def lstm_model(params, vectorize_layer=None, maxLen=None, word_to_vec_map=None, word_to_index=None):
+    if params.embeddings == 'GloVe':
+        inputs = Input(shape=(maxLen,), dtype='int32')
+
+        # Create the embedding layer pretrained with GloVe Vectors (≈1 line)
+        embedding_layer = pretrained_embedding_layer(word_to_vec_map, word_to_index)
+
+        # Propagate sentence_indices through your embedding layer
+        # (See additional hints in the instructions).
+        X_inp = embedding_layer(inputs)
+    else:
+        inputs = Input(shape=(), dtype='string')
+        X_inp = vectorize_layer(inputs)
+        X_inp = layers.Embedding(
+            input_dim=len(vectorize_layer.get_vocabulary()),
+            output_dim=params.embedding_size,
+            # Use masking to handle the variable sequence lengths
+            mask_zero=True)(X_inp)
     X = layers.LSTM(params.h1_units, return_sequences=True, dropout=params.dropout_rate, recurrent_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda))(X_inp)
     X = layers.LSTM(params.h2_units, dropout=params.dropout_rate, recurrent_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda))(X)
     outputs = layers.Dense(1)(X)
@@ -248,28 +258,33 @@ def model_fn(inputs, params, embeddings_path=None):
         if params.embeddings == 'GloVe':
             print('glove embeddings: model_fn - 161')
             params.embedding_size = 50
-            # inputs['train'][0] = tf.map_fn(sentence_to_avg, inputs['train'][0])
-            # inputs['val'][0] = tf.map_fn(sentence_to_avg, inputs['val'][0])
-            # inputs['test'][0] = tf.map_fn(sentence_to_avg, inputs['test'][0])
             words_to_index, index_to_words, word_to_vec_map = read_glove_vecs(embeddings_path)
 
             # Get a valid word contained in the word_to_vec_map.
-            any_word = list(word_to_vec_map.keys())[0]
             str_feat_train = []
             str_feat_val = []
             str_feat_test = []
-            for i in range(inputs['train'][0].shape[0]):
-                str_feat_train.append(sentence_to_avg(inputs['train'][0][i], word_to_vec_map, any_word))
+            # inputs['train'][0] is words_train, a 1D string tensor, 1 string per author / label
+            # inputs['train'][0].shape[0] is (n,) for dataset with n examples
+            for i in range(inputs['train'][0].shape[0]): # for each example:
+                author_text = inputs['train'][0][i]
+                str_feat_train.append(sentence_to_avg(author_text, word_to_vec_map))
             print('finished sentence_to_avg for train')
             for i in range(inputs['val'][0].shape[0]):
-                str_feat_val.append(sentence_to_avg(inputs['val'][0][i], word_to_vec_map, any_word))
+                str_feat_val.append(sentence_to_avg(inputs['val'][0][i], word_to_vec_map))
             print('finished sentence_to_avg for val')
             for i in range(inputs['test'][0].shape[0]):
-                str_feat_test.append(sentence_to_avg(inputs['test'][0][i], word_to_vec_map, any_word))
+                str_feat_test.append(sentence_to_avg(inputs['test'][0][i], word_to_vec_map))
             print('finished sentence_to_avg for test')
             inputs['train'][0] = tf.cast(tf.stack(str_feat_train), 'float64')
             inputs['val'][0] = tf.cast(tf.stack(str_feat_val), 'float64')
             inputs['test'][0] = tf.cast(tf.stack(str_feat_test), 'float64')
+            inputs['train'][4] = tf.data.Dataset.from_tensor_slices((inputs['train'][0], inputs['train'][3])) \
+                .shuffle(params.batch_size, reshuffle_each_iteration=True).batch(params.batch_size)
+            inputs['val'][4] = tf.data.Dataset.from_tensor_slices((inputs['val'][0], inputs['val'][3])) \
+                .shuffle(params.batch_size, reshuffle_each_iteration=True).batch(params.batch_size)
+            inputs['test'][4] =  tf.data.Dataset.from_tensor_slices((inputs['test'][0], inputs['test'][3])) \
+                .shuffle(params.batch_size, reshuffle_each_iteration=True).batch(params.batch_size)
             model = mlp_model(params)
         elif params.embeddings == 'SBERT':
             print('sbert embeddings: model fn - 194')
@@ -292,6 +307,12 @@ def model_fn(inputs, params, embeddings_path=None):
             inputs['train'][0] = tf.cast(tf.stack(str_feat_train), 'float64')
             inputs['val'][0] = tf.cast(tf.stack(str_feat_val), 'float64')
             inputs['test'][0] = tf.cast(tf.stack(str_feat_test), 'float64')
+            inputs['train'][4] = tf.data.Dataset.from_tensor_slices((inputs['train'][0], inputs['train'][3])) \
+                .shuffle(params.batch_size, reshuffle_each_iteration=True).batch(params.batch_size)
+            inputs['val'][4] = tf.data.Dataset.from_tensor_slices((inputs['val'][0], inputs['val'][3])) \
+                .shuffle(params.batch_size, reshuffle_each_iteration=True).batch(params.batch_size)
+            inputs['test'][4] =  tf.data.Dataset.from_tensor_slices((inputs['test'][0], inputs['test'][3])) \
+                .shuffle(params.batch_size, reshuffle_each_iteration=True).batch(params.batch_size)
             model = mlp_model(params)
         elif params.embeddings == None:
             print('no embeddings path: model fn - 181')
@@ -307,7 +328,8 @@ def model_fn(inputs, params, embeddings_path=None):
     elif params.model_version == 'rnn':
         if params.embeddings == 'GloVe':
             params.embedding_size = 50
-            maxLen = len(max(inputs['train'][0].numpy(), key=len).split())
+            # maxLen = len(max(inputs['train'][0].numpy(), key=len).split())
+            maxLen = params.max_word_length
             words_to_index, index_to_words, word_to_vec_map = read_glove_vecs(embeddings_path)
             inputs['train'][0] = sentences_to_indices(inputs['train'][0], words_to_index, maxLen)
             print('finished sentences_to_indices for train')
@@ -315,6 +337,12 @@ def model_fn(inputs, params, embeddings_path=None):
             print('finished sentences_to_indices for val')
             inputs['test'][0] = sentences_to_indices(inputs['test'][0], words_to_index, maxLen)
             print('finished sentences_to_indices for test')
+            inputs['train'][4] = tf.data.Dataset.from_tensor_slices((inputs['train'][0], inputs['train'][3])) \
+                .shuffle(params.batch_size, reshuffle_each_iteration=True).batch(params.batch_size)
+            inputs['val'][4] = tf.data.Dataset.from_tensor_slices((inputs['val'][0], inputs['val'][3])) \
+                .shuffle(params.batch_size, reshuffle_each_iteration=True).batch(params.batch_size)
+            inputs['test'][4] =  tf.data.Dataset.from_tensor_slices((inputs['test'][0], inputs['test'][3])) \
+                .shuffle(params.batch_size, reshuffle_each_iteration=True).batch(params.batch_size)
             model = rnn_model(params, maxLen, word_to_vec_map, words_to_index)
         elif params.embeddings == 'SBERT':
             print('sbert embeddings: model fn - 194')
@@ -338,9 +366,13 @@ def model_fn(inputs, params, embeddings_path=None):
             inputs['train'][0] = tf.cast(tf.ragged.stack(str_feat_train), 'float64')
             inputs['val'][0] = tf.cast(tf.ragged.stack(str_feat_val), 'float64')
             inputs['test'][0] = tf.cast(tf.ragged.stack(str_feat_test), 'float64')
+            inputs['train'][4] = tf.data.Dataset.from_tensor_slices((inputs['train'][0], inputs['train'][3])) \
+                .shuffle(params.batch_size, reshuffle_each_iteration=True).batch(params.batch_size)
+            inputs['val'][4] = tf.data.Dataset.from_tensor_slices((inputs['val'][0], inputs['val'][3])) \
+                .shuffle(params.batch_size, reshuffle_each_iteration=True).batch(params.batch_size)
+            inputs['test'][4] =  tf.data.Dataset.from_tensor_slices((inputs['test'][0], inputs['test'][3])) \
+                .shuffle(params.batch_size, reshuffle_each_iteration=True).batch(params.batch_size)
             maxLen = len(max(inputs['train'][0].numpy(), key=len).split())
-            print("MAX LEN")
-            print(maxLen)
             model = rnn_model(params, maxLen=maxLen)
         elif params.embeddings == None:
             # instantiate embedding layer
@@ -375,7 +407,11 @@ def model_fn(inputs, params, embeddings_path=None):
     # compile model
     model.compile(loss=BinaryCrossentropy(from_logits=True),
                   optimizer=tf.keras.optimizers.Adam(learning_rate=params.learning_rate, clipnorm=1.0),
-                  metrics=[tf.metrics.BinaryAccuracy(threshold=0.0), f1_m, precision_m, recall_m#,
+                  metrics=[tf.metrics.BinaryAccuracy(threshold=0.0),
+                           #f1_m still needs to be changed
+                           f1_m,
+                           tf.keras.metrics.Precision(threshold=0.0),
+                           tf.keras.metrics.Recall(threshold=0.0),
                            ])
                            #tf.metrics.AUC(from_logits=True)])
     print(model.summary())

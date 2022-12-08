@@ -3,7 +3,7 @@ import json
 import logging
 import numpy as np
 import tensorflow as tf
-from keras.layers import TextVectorization
+from nltk import word_tokenize
 
 
 # File from https://github.com/cs230-stanford/cs230-code-examples/blob/master/tensorflow/nlp/model/utils.py
@@ -99,39 +99,8 @@ def read_glove_vecs(glove_file):
             i = i + 1
     return words_to_index, index_to_words, word_to_vec_map
 
-def read_glove_ves2(glove_file):
-    embeddings_index = {}
-    with open(glove_file) as f:
-        for line in f:
-            word, coefs = line.split(maxsplit=1)
-            coefs = np.fromstring(coefs, "f", sep=" ")
-            embeddings_index[word] = coefs
 
-    print("Found %s word vectors." % len(embeddings_index))
-    return embeddings_index
-
-def build_glove_embedding_matrix(glove_file, voc_length, word_index):
-    num_tokens = voc_length + 2
-    embedding_dim = 100
-    hits = 0
-    misses = 0
-    embeddings_index = read_glove_ves2(glove_file)
-
-    # Prepare embedding matrix
-    embedding_matrix = np.zeros((num_tokens, embedding_dim))
-    for word, i in word_index.items():
-        embedding_vector = embeddings_index.get(word)
-        if embedding_vector is not None:
-            # Words not found in embedding index will be all-zeros.
-            # This includes the representation for "padding" and "OOV"
-            embedding_matrix[i] = embedding_vector
-            hits += 1
-        else:
-            misses += 1
-    print("Converted %d words (%d misses)" % (hits, misses))
-    return embedding_matrix
-
-def sentence_to_avg(sentence, word_to_vec_map, any_word):
+def sentence_to_avg(sentence, word_to_vec_map):
     """
     Converts a sentence (string) into a list of words (strings). Extracts the GloVe representation of each word
     and averages its value into a single vector encoding the meaning of the sentence.
@@ -144,28 +113,21 @@ def sentence_to_avg(sentence, word_to_vec_map, any_word):
     avg -- average vector encoding information about the sentence, numpy-array of shape (J,), where J can be any number
     """
     # Step 1: Split sentence into list of lower case words (≈ 1 line)
-    words = sentence.numpy().decode("utf-8").lower().split()
+    words = word_tokenize(sentence.numpy().decode("utf-8").lower())
 
-    # Initialize the average word vector, should have the same shape as your word vectors.
-    # Use `np.zeros` and pass in the argument of any word's word 2 vec's shape
-    avg = tf.zeros(word_to_vec_map[any_word].shape)
-
-    # Initialize count to 0
-    count = 0
-
+    vecs = []
     # Step 2: average the word vectors. You can loop over the words in the list "words".
     for w in words:
-        # Check that word exists in word_to_vec_map
-        if w in word_to_vec_map:
-            avg += word_to_vec_map[w]
-            # Increment count
-            count += 1
+        v = word_to_vec_map.get(w)
+        if v is not None:
+            vecs.append(v)
+    if vecs:
+        avg = tf.math.reduce_mean(vecs, axis=0)
+    else:
+        any_word = next(iter(word_to_vec_map))
+        avg = tf.zeros(word_to_vec_map[any_word].shape)
 
-    if count > 0:
-        # Get the average. But only if count > 0
-        avg = avg / count
-
-    return tf.cast(avg, dtype='float64')
+    return tf.cast(avg, dtype='float32')
 
 
 def sentences_to_indices(X, word_to_index, max_len):
@@ -182,6 +144,8 @@ def sentences_to_indices(X, word_to_index, max_len):
     X_indices -- array of indices corresponding to words in the sentences from X, of shape (m, max_len)
     """
 
+    # X is entire dataset's worth of training examples
+    # X is 1D string tensor: [training_example]
     m = X.shape[0]  # number of training examples
 
     ### START CODE HERE ###
@@ -191,22 +155,18 @@ def sentences_to_indices(X, word_to_index, max_len):
     for i in range(m):  # loop over training examples
 
         # Convert the ith training sentence in lower case and split is into words. You should get a list of words.
-        sentence_words = X[i].numpy().decode("utf-8").lower().split()
+        sentence_words = word_tokenize(X[i].numpy().decode("utf-8").lower())
+        del sentence_words[max_len:]
 
         # Initialize j to 0
         j = 0
 
         # Loop over the words of sentence_words
-
         for w in sentence_words:
-            # if w exists in the word_to_index dictionary
-            if w in word_to_index:
-                # Set the (i,j)th entry of X_indices to the index of the correct word.
-                X_indices[i, j] = word_to_index[w]
-                # Increment j to j + 1
-                j = j + 1
-
-    ### END CODE HERE ###
+            v = word_to_index.get(w)
+            if v is not None:
+                X_indices[i, j] = v
+                j +=1
 
     return X_indices
 

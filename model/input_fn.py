@@ -3,8 +3,6 @@ import numpy as np
 import tensorflow as tf
 import json
 
-from model.model_fn import custom_standardization
-
 
 def load_data_to_df(path):
     df = pd.read_csv(path, compression='gzip')
@@ -45,10 +43,22 @@ def load_data_to_df(path):
     # concatenate title & body text into 1 string to create embedding from all the words that
     # author ever wrote--we should consider better ways to do this
     # df["words"] = json.dumps(df["title"] + df["selftext"])#.astype(str)
-    df["words"] = (df["title"] + df["selftext"]).apply(lambda x: json.dumps(x))
+
+    # old version:
+    # words is column of stringified json string array:
+    #   '["asdf example title", "this was the selftext"]'
+    # df["words"] = (df["title"] + df["selftext"]).apply(lambda x: json.dumps(x))
+
+    # new version:
+    # words is title + " " + selftext
+    def dojoin(xs):
+        return " ".join([s for s in xs if type(s) == str])
+
+    df["words"] = (df["title"] + df["selftext"]).apply(dojoin)
+    #df["words"] = (df["title"] + df["selftext"]).apply(lambda x: " ".join(x))
     df.dropna(subset=['words', 'q_level'], inplace=True)
     print(df['q_level'].value_counts())
-    print(df.head())
+    print(df["words"].head())
 
     return df
 
@@ -83,32 +93,17 @@ def convert_bert_lstm_df_to_tensor(df, params):
                     posts.append(tf.strings.lower(tf.ragged.constant(post)))
         authors.append(tf.ragged.stack(posts, axis=0))
 
-        # authors.append(tf.ragged.stack([
-        #     tf.strings.lower(tf.ragged.constant(post)) for post in e[1]
-        # ], axis=0))
-
     return tf.ragged.stack(authors, axis=0)
-
-    # return \
-    #     tf.ragged.stack([
-    #         tf.ragged.stack([
-    #             tf.strings.lower(tf.ragged.constant(post)) for post in e[1]
-    #         ], axis=0) for e in df['text'].items()
-    #     ], axis=0)
 
 
 def convert_bert_rnn_df_to_tensor(df, params):
     authors = []
     for i, sentences in enumerate(df['text']):
-        # if i < 100:
-            del sentences[params.sentences_length:]
-            try:
-                authors.append(tf.strings.lower(tf.ragged.constant(sentences)))
-            except ValueError:
-                authors.append(tf.strings.lower(tf.ragged.constant([w for w in sentences if isinstance(w, str)])))
-        # authors.append(tf.ragged.stack([
-        #     tf.strings.lower(tf.ragged.constant(post)) for post in e[1]
-        # ], axis=0))
+        del sentences[params.sentences_length:]
+        try:
+            authors.append(tf.strings.lower(tf.ragged.constant(sentences)))
+        except ValueError:
+            authors.append(tf.strings.lower(tf.ragged.constant([w for w in sentences if isinstance(w, str)])))
 
     return tf.ragged.stack(authors, axis=0)
 
@@ -217,6 +212,7 @@ def input_fn(pos_path, neg_path, params):
     df = load_all_data_to_df(pos_path, neg_path, params)
 
     # convert to tensor to input to model
+    # words is 1D string tensor, 1 element per author: all of that author's text
     words = tf.convert_to_tensor(df["words"], dtype=tf.string)
     score = tf.convert_to_tensor(df["score"])
     num_replies = tf.convert_to_tensor(df["num_comments"])
