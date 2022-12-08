@@ -57,6 +57,8 @@ if __name__ == '__main__':
         params.sentences_length = int(args.sentences_length)
     if args.max_features:
         params.max_features = int(args.max_features)
+    if args.embedding_size:
+        params.embedding_size = int(args.embedding_size)
 
 
     # Set the logger
