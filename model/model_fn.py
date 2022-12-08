@@ -26,13 +26,26 @@ nlp = tfm.nlp
 
 
 # define evaluation metrics
+def recall_m(y_true, y_pred):
+    y_pred = tf.math.sigmoid(y_pred)
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
+    recall = true_positives / (possible_positives + K.epsilon())
+    return recall
+
+
+def precision_m(y_true, y_pred):
+    y_pred = tf.math.sigmoid(y_pred)
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
+    precision = true_positives / (predicted_positives + K.epsilon())
+    return precision
+
+
 def f1_m(y_true, y_pred):
-    p = tf.metrics.Precision(thresholds=0.0)
-    r = tf.metrics.Recall(thresholds=0.0)
-    p.update_state(y_true, y_pred)
-    r.update_state(y_true, y_pred)
-    precision = p.result().numpy()
-    recall = r.result().numpy()
+    y_pred = tf.math.sigmoid(y_pred)
+    precision = precision_m(y_true, y_pred)
+    recall = recall_m(y_true, y_pred)
     return 2*((precision*recall)/(precision+recall+K.epsilon()))
 
 
@@ -362,9 +375,9 @@ def model_fn(inputs, params, embeddings_path=None):
     # compile model
     model.compile(loss=BinaryCrossentropy(from_logits=True),
                   optimizer=tf.keras.optimizers.Adam(learning_rate=params.learning_rate, clipnorm=1.0),
-                  metrics=[tf.metrics.BinaryAccuracy(threshold=0.0), f1_m, tf.metrics.Precision(thresholds=0.0),
-                           tf.metrics.Recall(thresholds=0.0)
+                  metrics=[tf.metrics.BinaryAccuracy(threshold=0.0), f1_m, precision_m, recall_m#,
                            ])
+                           #tf.metrics.AUC(from_logits=True)])
     print(model.summary())
 
     return model, inputs
