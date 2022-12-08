@@ -27,8 +27,8 @@ nlp = tfm.nlp
 
 # define evaluation metrics
 def f1_m(y_true, y_pred):
-    p = tf.metrics.Precision(threshold=0.0)
-    r = tf.metrics.Recall(threshold=0.0)
+    p = tf.metrics.Precision(thresholds=0.0)
+    r = tf.metrics.Recall(thresholds=0.0)
     p.update_state(y_true, y_pred)
     r.update_state(y_true, y_pred)
     precision = p.result().numpy()
