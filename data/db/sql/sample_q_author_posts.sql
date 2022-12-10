@@ -42,9 +42,3 @@ order by hashed_author, created_utc
 ) 
 TO STDOUT 
 WITH (FORMAT CSV, HEADER);
-
-
-
-
-
-

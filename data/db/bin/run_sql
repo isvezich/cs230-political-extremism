@@ -8,4 +8,4 @@ cd "${BIN_DIR}/.."
 #sqlite3 "$SQLITE_DB" "$@"
 
 # CHANGE THIS
-/Applications/Postgres.app/Contents/Versions/latest/bin/psql "$@"
+PGPASSWORD=asdf psql -h localhost -U postgres -d reddit "$@"

@@ -7,7 +7,7 @@ cd "${BIN_DIR}/.."
 IN_FILE='../QAnon/Hashed_Q_Submissions_Raw_Combined.csv'
 
 python3 scripts/process_qanon_csv.py |
-  bin/run_sql -c "COPY reddit_posts_2 FROM stdin (FORMAT csv);"
+  bin/run_sql -c "COPY reddit_posts FROM stdin (FORMAT csv);"
 
 #  sed 's/\r//g' |
 
