@@ -89,6 +89,14 @@ def pretrained_embedding_layer(word_to_vec_map, word_to_index):
 
     return embedding_layer
 
+def create_vectorized_layer(words, max_features):
+    vectorize_layer = TextVectorization(
+        standardize=custom_standardization,
+        max_tokens=max_features,
+        output_mode='int')
+    vectorize_layer.adapt(words)
+    return vectorize_layer
+
 
 def word_mlp_model(params, vectorize_layer=None):
     if params.embeddings == 'GloVe':
@@ -209,7 +217,6 @@ def bert_to_mlp_model(params):
 
     return model
 
-
 def model_fn(inputs, params):
     """Compute logits of the model (output distribution)
 
@@ -222,6 +229,8 @@ def model_fn(inputs, params):
     """
 
     # set up model architecture
+
+
     if params.model_version == 'mlp':
         print('model version is mlp: model_fn - 159')
         if params.embeddings == 'GloVe':
@@ -231,11 +240,7 @@ def model_fn(inputs, params):
         elif params.embeddings == 'None':
             print('no embeddings path: model fn - 181')
             # instantiate embedding layer
-            vectorize_layer = TextVectorization(
-                standardize=custom_standardization,
-                max_tokens=params.max_features,
-                output_mode='int')
-            vectorize_layer.adapt(inputs['train'][0])
+            vectorize_layer = create_vectorized_layer(inputs['train'][0], params.max_features)
             model = word_mlp_model(params, vectorize_layer=vectorize_layer)
         else:
             raise NotImplementedError("invalid embedding type")
@@ -246,11 +251,7 @@ def model_fn(inputs, params):
             model = word_rnn_model(params, inputs['word_to_vec_map'], inputs['words_to_index'])
         elif params.embeddings == 'None':
             # instantiate embedding layer
-            vectorize_layer = TextVectorization(
-                standardize=custom_standardization,
-                max_tokens=params.max_features,
-                output_mode='int')
-            vectorize_layer.adapt(inputs['train'][0])
+            vectorize_layer = create_vectorized_layer(inputs['train'][0], params.max_features)
             model = word_rnn_model(params, vectorize_layer=vectorize_layer)
         else:
             raise NotImplementedError("invalid embedding type")
@@ -259,11 +260,7 @@ def model_fn(inputs, params):
             model = word_lstm_model(params, inputs['word_to_vec_map'], inputs['words_to_index'])
         elif params.embeddings == 'None':
             # instantiate embedding layer
-            vectorize_layer = TextVectorization(
-                standardize=custom_standardization,
-                max_tokens=params.max_features,
-                output_mode='int')
-            vectorize_layer.adapt(inputs['train'][0])
+            vectorize_layer = create_vectorized_layer(inputs['train'][0], params.max_features)
             model = word_lstm_model(params, vectorize_layer=vectorize_layer)
         else:
             raise NotImplementedError("invalid embedding type")
