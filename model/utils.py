@@ -6,7 +6,7 @@ import tensorflow as tf
 from nltk import word_tokenize
 
 
-# File from https://github.com/cs230-stanford/cs230-code-examples/blob/master/tensorflow/nlp/model/utils.py
+# from https://github.com/cs230-stanford/cs230-code-examples/blob/master/tensorflow/nlp/model/utils.py
 class Params():
     """Class that loads hyperparameters from a json file.
 
@@ -38,6 +38,7 @@ class Params():
         return self.__dict__
 
 
+# from https://github.com/cs230-stanford/cs230-code-examples/blob/master/tensorflow/nlp/model/utils.py
 def set_logger(log_path):
     """Sets the logger to log info in terminal and file `log_path`.
 
@@ -67,6 +68,7 @@ def set_logger(log_path):
         logger.addHandler(stream_handler)
 
 
+# from https://github.com/cs230-stanford/cs230-code-examples/blob/master/tensorflow/nlp/model/utils.py
 def save_dict_to_json(d, json_path):
     """Saves dict of floats in json file
 
