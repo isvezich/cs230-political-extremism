@@ -1,17 +1,15 @@
 {
-    "model_version": "mlp",
-    "max_features": 25000,
-    "sequence_length": 1024,
+    "model_version": "BERT_MLP",
+    "model_id": "sentence-transformers/all-MiniLM-L6-v2",
     "h1_units": 256,
     "h2_units": 128,
     "l2_reg_lambda": 1e-3,
-    "embedding_size": 512,
     "learning_rate": 0.001,
-    "batch_size": 32,
-    "num_epochs": 2,
+    "num_epochs": 30,
     "early_stopping_patience": 10,
     "dropout_rate": 0.1,
+    "batch_size": 10,
     "sample_rate": 1.0,
-    "max_word_length": 60000,
+    "sentences_length": 1000,
     "embeddings": "None"
 }

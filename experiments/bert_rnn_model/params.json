@@ -1,0 +1,14 @@
+{
+    "model_version": "BERT_RNN",
+    "model_id": "sentence-transformers/all-MiniLM-L6-v2",
+    "rnn_units": 32,
+    "l2_reg_lambda": 1e-3,
+    "learning_rate": 0.001,
+    "num_epochs": 30,
+    "early_stopping_patience": 10,
+    "dropout_rate": 0.1,
+    "batch_size": 3,
+    "sentences_length": 1000,
+    "sample_rate": 1.0,
+    "embeddings": "None"
+}

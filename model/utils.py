@@ -1,7 +1,9 @@
 """General utility functions"""
-
 import json
 import logging
+import numpy as np
+import tensorflow as tf
+from nltk import word_tokenize
 
 
 # File from https://github.com/cs230-stanford/cs230-code-examples/blob/master/tensorflow/nlp/model/utils.py
@@ -76,3 +78,102 @@ def save_dict_to_json(d, json_path):
         # We need to convert the values to float for json (it doesn't accept np.array, np.float, )
         d = {k: float(v) for k, v in d.items()}
         json.dump(d, f, indent=4)
+
+
+def read_glove_vecs(glove_file):
+    with open(glove_file, 'r') as f:
+        words = set()
+        word_to_vec_map = {}
+        for line in f:
+            line = line.strip().split()
+            curr_word = line[0]
+            words.add(curr_word)
+            word_to_vec_map[curr_word] = np.array(line[1:], dtype=np.float64)
+
+        i = 1
+        words_to_index = {}
+        index_to_words = {}
+        for w in sorted(words):
+            words_to_index[w] = i
+            index_to_words[i] = w
+            i = i + 1
+    return words_to_index, index_to_words, word_to_vec_map
+
+
+def sentence_to_avg(sentence, word_to_vec_map):
+    """
+    Converts a sentence (string) into a list of words (strings). Extracts the GloVe representation of each word
+    and averages its value into a single vector encoding the meaning of the sentence.
+
+    Arguments:
+    sentence -- string, one training example from X
+    word_to_vec_map -- dictionary mapping every word in a vocabulary into its 50-dimensional vector representation
+
+    Returns:
+    avg -- average vector encoding information about the sentence, numpy-array of shape (J,), where J can be any number
+    """
+    # Split sentence into list of lower case words
+    words = word_tokenize(sentence.numpy().decode("utf-8").lower())
+
+    vecs = []
+    # Average the word vectors
+    for w in words:
+        v = word_to_vec_map.get(w)
+        if v is not None:
+            vecs.append(v)
+    if vecs:
+        avg = tf.math.reduce_mean(vecs, axis=0)
+    else:
+        any_word = next(iter(word_to_vec_map))
+        avg = tf.zeros(word_to_vec_map[any_word].shape)
+
+    return tf.cast(avg, dtype='float32')
+
+
+def sentences_to_indices(X, word_to_index, max_len):
+    """
+    Converts an array of sentences (strings) into an array of indices corresponding to words in the sentences.
+    The output shape should be such that it can be given to `Embedding()` (described in Figure 4).
+
+    Arguments:
+    X -- array of sentences (strings), of shape (m,)
+    word_to_index -- a dictionary containing the each word mapped to its index
+    max_len -- maximum number of words in a sentence. You can assume every sentence in X is no longer than this.
+
+    Returns:
+    X_indices -- array of indices corresponding to words in the sentences from X, of shape (m, max_len)
+    """
+    m = X.shape[0]  # number of training examples
+    X_indices = np.zeros((m, max_len))
+
+    for i in range(m):  # loop over training examples
+
+        # Convert the ith training sentence in lower case and split is into words
+        sentence_words = word_tokenize(X[i].numpy().decode("utf-8").lower())
+        del sentence_words[max_len:]
+
+        j = 0
+        # Loop over the words of sentence_words
+        for w in sentence_words:
+            v = word_to_index.get(w)
+            if v is not None:
+                X_indices[i, j] = v
+                j +=1
+
+    return X_indices
+
+
+def sentence_to_sbert_avg(inp, model):
+    sentences = json.loads(inp.numpy().decode("utf-8"))
+    sentences = [s for s in sentences if isinstance(s, str)]
+    sentence_embeddings = model.encode(sentences)
+    sentence_embeddings = np.mean(sentence_embeddings, axis=0)
+    return tf.convert_to_tensor(sentence_embeddings)
+
+
+def sentence_to_sbert_seq(inp, model):
+    sentences = json.loads(inp.numpy().decode("utf-8"))
+    sentences = [s for s in sentences if isinstance(s, str)]
+    sentence_embeddings = model.encode(sentences)
+    return sentence_embeddings
+

@@ -1,0 +1,17 @@
+{
+    "model_version": "BERT_LSTM",
+    "model_id": "sentence-transformers/all-MiniLM-L6-v2",
+    "lstm_units_post": 32,
+    "lstm_units_author": 32,
+    "l2_reg_lambda": 1e-3,
+    "embedding_size": 512,
+    "learning_rate": 0.001,
+    "num_epochs": 30,
+    "early_stopping_patience": 10,
+    "dropout_rate": 0.1,
+    "batch_size": 3,
+    "sentences_length": 5,
+    "posts_length": 100,
+    "sample_rate": 1.0,
+    "embeddings": "None"
+}
