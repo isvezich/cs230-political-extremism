@@ -130,11 +130,11 @@ dmypy.json
 .pyre/
 
 # data
-data/Qanon
-data/db/var
-data/db/venv
-data/embeddings
-data
+data/*
+!data/db
+!data/db/bin
+!data/db/scripts
+!data/db/sql
 
 # models
 *.h5

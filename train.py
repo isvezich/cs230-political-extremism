@@ -71,17 +71,17 @@ if __name__ == '__main__':
     pos_dataset = os.path.join(args.data_dir, 'q-posts-v2.csv.gz')
     neg_dataset = os.path.join(args.data_dir, 'non-q-posts-v2.csv.gz')
     bert_dataset = os.path.join(args.data_dir, 'bert.csv.gz')
-    glove_dataset = os.path.join(args.embeddings_dir, 'glove.6B.50d.txt')
     msg = "{} file not found. Make sure you have the right dataset"
     assert os.path.isfile(pos_dataset), msg.format(pos_dataset)
     assert os.path.isfile(neg_dataset), msg.format(neg_dataset)
     assert os.path.isfile(bert_dataset), msg.format(bert_dataset)
-    assert os.path.isfile(glove_dataset), msg.format(glove_dataset)
 
     logging.info("Creating the datasets...")
     print(f'Embeddings == {params.embeddings}: train')
     embeddings_path = None
     if params.embeddings == "GloVe":
+        glove_dataset = os.path.join(args.embeddings_dir, 'glove.6B.50d.txt')
+        assert os.path.isfile(glove_dataset), msg.format(glove_dataset)
         embeddings_path = glove_dataset
 
     # Create the input tensors from the datasets

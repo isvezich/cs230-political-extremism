@@ -2,7 +2,7 @@
 
 ## Download the QAnon dataset
 
-Create a `data/QAnon` directory and download both `Hashed_allAuthorStatus.csv` and `Hashed_Q_Submissions_Raw_Combined.csv` from https://figshare.com/articles/dataset/Datasets_for_QAnon_on_Reddit_research_project_/19251581
+Create a `data` directory and download `non-q-posts-v2.csv.gz`, `q-posts-v2.csv.gz`, and `bert.csv.gz` from https://cs230-reddit.s3.us-west-1.amazonaws.com/non-q-posts-v2.csv.gz, https://cs230-reddit.s3.us-west-1.amazonaws.com/q-posts-v2.csv.gz, https://cs230-reddit.s3.us-west-1.amazonaws.com/bert.csv.gz
 
 ## Quickstart
 
@@ -23,3 +23,9 @@ python train.py
 ```
 
 Optionally `--model_dir` and `--data_dir` can be used to specify a different model (besides baseline) and data dir, respectively.
+
+For tuning the hyperparameters, here are the supported arguments that would override the param json:
+
+```angular2html
+--h1_units, --h2_units, --l2_reg_lambda, --learning_rate, --batch_size, --num_epochs, --dropout_rate, --early_stopping_patience, --sample_rate, --sentences_length, --max_features, --embedding_size --word_embeddings
+```
