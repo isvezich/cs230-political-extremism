@@ -13,7 +13,7 @@ class SentenceBertRNN(tf.keras.Model):
     def build(self, inputs):
         self.rnn = tf.keras.layers.SimpleRNN(
             self.params.rnn_units,
-            dropout=self.params.dropout_rate,
+            recurrent_dropout=self.params.dropout_rate,
             recurrent_regularizer=tf.keras.regularizers.L2(self.params.l2_reg_lambda)
         )
 

@@ -146,10 +146,8 @@ def word_rnn_model(params, word_to_vec_map=None, word_to_index=None, vectorize_l
             output_dim=params.embedding_size,
             # Use masking to handle the variable sequence lengths
             mask_zero=True)(X_inp)
-    # The output of GRU will be a 3D tensor of shape (batch_size, timesteps, 256)
-    X = layers.SimpleRNN(params.h1_units, return_sequences=True, dropout=params.dropout_rate, recurrent_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda))(X_inp)
-    # The output of SimpleRNN will be a 2D tensor of shape (batch_size, 128)
-    X = layers.SimpleRNN(params.h2_units, dropout=params.dropout_rate, recurrent_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda))(X)
+    # The output of RNN will be a 3D tensor of shape (batch_size, timesteps, 64)
+    X = layers.SimpleRNN(params.h1_units, recurrent_dropout=params.dropout_rate, recurrent_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda))(X_inp)
     outputs = layers.Dense(1, activation='sigmoid')(X)
     model = Model(inputs, outputs)
 
@@ -173,8 +171,8 @@ def word_lstm_model(params, vectorize_layer=None, maxLen=None, word_to_vec_map=N
             output_dim=params.embedding_size,
             # Use masking to handle the variable sequence lengths
             mask_zero=True)(X_inp)
-    X = layers.LSTM(params.h1_units, return_sequences=True, dropout=params.dropout_rate, recurrent_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda))(X_inp)
-    X = layers.LSTM(params.h2_units, dropout=params.dropout_rate, recurrent_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda))(X)
+    X = layers.LSTM(params.h1_units, return_sequences=True, recurrent_dropout=params.dropout_rate, recurrent_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda))(X_inp)
+    X = layers.LSTM(params.h2_units, recurrent_dropout=params.dropout_rate, recurrent_regularizer=tf.keras.regularizers.L2(params.l2_reg_lambda))(X)
     outputs = layers.Dense(1, activation='sigmoid')(X)
     model = Model(inputs, outputs)
 
@@ -238,7 +236,6 @@ def model_fn(inputs, params):
             params.embedding_size = 50
             model = word_mlp_model(params)
         elif params.embeddings == 'None':
-            print('no embeddings path: model fn - 181')
             # instantiate embedding layer
             vectorize_layer = create_vectorized_layer(inputs['train'][0], params.max_features)
             model = word_mlp_model(params, vectorize_layer=vectorize_layer)
