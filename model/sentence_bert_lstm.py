@@ -20,9 +20,6 @@ class SentenceBertLSTM(tf.keras.Model):
 
     def embed_post(self, post):
         post_model = self.model(post)
-        print("post_mode")
-        print(post_model.shape)
-        print(post_model[0])
         return post_model
 
     def embed_author(self, posts):
@@ -33,17 +30,10 @@ class SentenceBertLSTM(tf.keras.Model):
                                                                  dtype=tf.float32)
                          )
 
-        print("sentence_encodings_per_author")
-        print(posts.shape)
-        print(sentence_encodings_per_author.shape)
-        print(sentence_encodings_per_author[0])
         return self.lstm_posts(sentence_encodings_per_author)
 
 
     def embed_authors(self, authors):
-        print("author encodings")
-        print('author got')
-        print(authors.shape)
         author_encodings = tf.map_fn(fn=self.embed_author,
                          elems=authors,
                          fn_output_signature=tf.RaggedTensorSpec(shape=[None, self.params.lstm_units_post],

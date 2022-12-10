@@ -9,5 +9,6 @@
     "dropout_rate": 0.1,
     "batch_size": 3,
     "sentences_length": 1000,
+    "sample_rate": 1.0,
     "embeddings": "None"
 }

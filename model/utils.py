@@ -112,11 +112,11 @@ def sentence_to_avg(sentence, word_to_vec_map):
     Returns:
     avg -- average vector encoding information about the sentence, numpy-array of shape (J,), where J can be any number
     """
-    # Step 1: Split sentence into list of lower case words (≈ 1 line)
+    # Split sentence into list of lower case words
     words = word_tokenize(sentence.numpy().decode("utf-8").lower())
 
     vecs = []
-    # Step 2: average the word vectors. You can loop over the words in the list "words".
+    # Average the word vectors
     for w in words:
         v = word_to_vec_map.get(w)
         if v is not None:
@@ -143,24 +143,16 @@ def sentences_to_indices(X, word_to_index, max_len):
     Returns:
     X_indices -- array of indices corresponding to words in the sentences from X, of shape (m, max_len)
     """
-
-    # X is entire dataset's worth of training examples
-    # X is 1D string tensor: [training_example]
     m = X.shape[0]  # number of training examples
-
-    ### START CODE HERE ###
-    # Initialize X_indices as a numpy matrix of zeros and the correct shape (≈ 1 line)
     X_indices = np.zeros((m, max_len))
 
     for i in range(m):  # loop over training examples
 
-        # Convert the ith training sentence in lower case and split is into words. You should get a list of words.
+        # Convert the ith training sentence in lower case and split is into words
         sentence_words = word_tokenize(X[i].numpy().decode("utf-8").lower())
         del sentence_words[max_len:]
 
-        # Initialize j to 0
         j = 0
-
         # Loop over the words of sentence_words
         for w in sentence_words:
             v = word_to_index.get(w)

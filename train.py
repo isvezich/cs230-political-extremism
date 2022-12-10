@@ -7,7 +7,7 @@ import os
 from model.utils import Params
 from model.utils import set_logger
 from model.training import train_and_evaluate
-from model.input_fn import input_fn, input_fn_bert_lstm, input_fn_bert_rnn
+from model.input_fn import input_fn
 from model.model_fn import model_fn
 from model.visualize import metrics_to_plot
 
@@ -16,19 +16,21 @@ parser.add_argument('--model_dir', default='experiments/base_model',
                     help="Directory containing params.json")
 parser.add_argument('--data_dir', default='data', help="Directory containing the dataset")
 parser.add_argument('--embeddings_dir', default='data/embeddings', help="Directory containing pre-trained embeddings")
-parser.add_argument('--which_embeddings', default='GloVe', help="Which pre-trained embeddings to use")
-parser.add_argument('--h1_units', default=256, help="Units in hidden layer 1")
-parser.add_argument('--h2_units', default=128, help="Units in hidden layer 2")
-parser.add_argument('--l2_reg_lambda', default=1e-2, help="Weight on l2 penalty")
-parser.add_argument('--learning_rate', default=0.001, help="Learning rate")
-parser.add_argument('--batch_size', default=32, help="Batch size")
-parser.add_argument('--num_epochs', default=2, help="Num epochs")
-parser.add_argument('--dropout_rate', default=0.1, help="Dropout rate")
-parser.add_argument('--early_stopping_patience', default=10, help="Early stopping patience")
-parser.add_argument('--sample_rate', default=1., help="Percent of data to use")
-parser.add_argument('--sentences_length', default=100)
-parser.add_argument('--max_features', default=5000)
-parser.add_argument('--embedding_size', default=128)
+
+# Arguments that can override params
+parser.add_argument('--h1_units', help="Units in hidden layer 1")
+parser.add_argument('--h2_units', help="Units in hidden layer 2")
+parser.add_argument('--l2_reg_lambda', help="Weight on l2 penalty")
+parser.add_argument('--learning_rate', help="Learning rate")
+parser.add_argument('--batch_size', help="Batch size")
+parser.add_argument('--num_epochs', help="Num epochs")
+parser.add_argument('--dropout_rate', help="Dropout rate")
+parser.add_argument('--early_stopping_patience', help="Early stopping patience")
+parser.add_argument('--sample_rate', help="Percent of data to use")
+parser.add_argument('--sentences_length', help="Max sentence length per author")
+parser.add_argument('--max_features', help="Max length of features")
+parser.add_argument('--embedding_size', help="Size of the embedding")
+parser.add_argument('--word_embeddings', help='Which pre-trained word embeddings to use, choices - are None and GloVe')
 
 if __name__ == '__main__':
     # Load the parameters from the experiment params.json file in model_dir
@@ -60,7 +62,8 @@ if __name__ == '__main__':
         params.max_features = int(args.max_features)
     if args.embedding_size:
         params.embedding_size = int(args.embedding_size)
-
+    if args.word_embeddings:
+        params.embeddings = args.word_embeddings
 
     # Set the logger
     set_logger(os.path.join(args.model_dir, 'train.log'))
@@ -76,43 +79,18 @@ if __name__ == '__main__':
     assert os.path.isfile(glove_dataset), msg.format(glove_dataset)
 
     logging.info("Creating the datasets...")
-    # Create the two iterators over the two datasets
-    print(args.which_embeddings)
-    if args.which_embeddings == "GloVe":
+    print(f'Embeddings == {params.embeddings}: train')
+    embeddings_path = None
+    if params.embeddings == "GloVe":
         embeddings_path = glove_dataset
-        params.embeddings = "GloVe"
-    elif args.which_embeddings == "SBERT":
-        params.embeddings = "SBERT"
-    elif args.which_embeddings == "None":
-        params.embeddings = None
-    else:
-        raise NotImplementedError("Unknown embeddings option: {}".format(args.which_embeddings))
 
-    if params.model_version == 'BERT':
-        logging.info('Making bert dataset')
-        inputs = input_fn_bert_lstm(bert_dataset, params)
-    if params.model_version == 'BERT_RNN':
-        logging.info('Making bert dataset')
-        inputs = input_fn_bert_rnn(bert_dataset, params)
-    if params.model_version == 'BERT_MLP':
-        logging.info('Making bert dataset')
-        inputs = input_fn_bert_rnn(bert_dataset, params)  # calling rnn is intentional
-    else:
-        inputs = input_fn(pos_dataset, neg_dataset, params)
+    # Create the input tensors from the datasets
+    inputs = input_fn(pos_dataset, neg_dataset, bert_dataset, params, embeddings_path)
     logging.info("- done.")
 
     # Define the models (2 different set of nodes that share weights for train and eval)
     logging.info("Creating the model...")
-    if args.which_embeddings == 'None':
-        print('which embeddings == None, BERT, BERT_RNN, or BERT_MLP: train - 58')
-        train_model, inputs = model_fn(inputs, params)
-    elif args.which_embeddings == 'SBERT':
-        print('which embeddings == SBERT: train - 62')
-        train_model, inputs = model_fn(inputs, params)
-    else:
-        print('which embeddings == GloVe: train - 65')
-        train_model, inputs = model_fn(inputs, params, embeddings_path)
-
+    train_model, inputs = model_fn(inputs, params)
     logging.info("- done.")
 
     # Train the model

@@ -13,5 +13,5 @@
     "dropout_rate": 0.1,
     "sample_rate": 1.0,
     "max_word_length": 60000,
-    "embeddings": "GloVe"
+    "embeddings": "None"
 }
